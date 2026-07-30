@@ -1,0 +1,22 @@
+services:
+  caddy:
+    image: custom-caddy:cloudflare
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80/tcp"
+      - "443:443/tcp"
+      - "443:443/udp" # Obsługa HTTP/3 (QUIC)
+    environment:
+      - CLOUDFLARE_API_TOKEN={{ vault_cloudflare_api_token }}
+    volumes:
+      - {{ caddy_dir | default('/opt/caddy') }}/Caddyfile:/etc/caddy/Caddyfile
+      - {{ caddy_dir | default('/opt/caddy') }}/data:/data
+      - {{ caddy_dir | default('/opt/caddy') }}/config:/config
+    networks:
+      - caddy-ingress
+
+networks:
+  caddy-ingress:
+    name: caddy-ingress
+    driver: bridge

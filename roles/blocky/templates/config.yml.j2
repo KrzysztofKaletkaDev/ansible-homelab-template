@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/0xERR0R/blocky/main/docs/config.schema.json
+
+ports:
+  dns: 53
+  http: 4000
+
+# 1. GŁÓWNE SERWERY UPSTREAM
+upstreams:
+  groups:
+    default:
+      - 1.1.1.1
+      - 1.0.0.1
+      - 9.9.9.9
+
+# 2. PRZEPISYWANIE DNS / CUSTOM DNS
+customDNS:
+  customTTL: 1h
+  mapping:
+    "homepage.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+    "adguard.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+    "vaultwarden.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+    "qnap.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+    "router.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+
+# 3. BLOKOWANIE REKLAM (denylists)
+blocking:
+  denylists:
+    ads_and_tracking:
+      - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
+      - https://adaway.org/hosts.txt
+    poland_spec:
+      - https://raw.githubusercontent.com/PolishFiltersTeam/KADhosts/master/KADhosts.txt
+      - https://hole.cert.pl/domains/v2/domains_hosts.txt
+
+  # 4. WYJĄTKI / WHITELIST
+  allowlists:
+    main_adguard_lists:
+      - connectivitycheck.gstatic.com
+      - connectivitycheck.android.com
+      - service.minerva.devices.a2z.com
+
+  # 5. ASSIGNMENT GRUP
+  clientGroupsBlock:
+    default:
+      - ads_and_tracking
+      - poland_spec
+
+  blockType: zeroIp
+
+  # w 0.25 timeout pobierania i okres odświeżania list są zagnieżdżone w "loading"
+  loading:
+    refreshPeriod: 4h
+    downloads:
+      timeout: 4m
+
+# 6. CACHING
+caching:
+  minTime: 5m
+  maxTime: 24h
+  prefetching: true

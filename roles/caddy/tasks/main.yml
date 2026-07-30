@@ -1,0 +1,60 @@
+---
+# ==============================================================================
+# ROLA: Caddy Reverse Proxy (roles/caddy/tasks/main.yml)
+# Kompiluje obraz Caddy z modułem DNS Cloudflare i wdraża Reverse Proxy.
+# ==============================================================================
+
+- name: Stwórz strukturę katalogów dla Caddy
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ caddy_dir | default('/opt/caddy') }}"
+    - "{{ caddy_dir | default('/opt/caddy') }}/data"
+    - "{{ caddy_dir | default('/opt/caddy') }}/config"
+
+- name: Wygeneruj plik Dockerfile z szablonu Jinja2
+  ansible.builtin.template:
+    src: Dockerfile.j2
+    dest: "{{ caddy_dir | default('/opt/caddy') }}/Dockerfile"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  register: caddy_dockerfile
+
+- name: Wygeneruj plik Caddyfile z szablonu Jinja2
+  ansible.builtin.template:
+    src: Caddyfile.j2
+    dest: "{{ caddy_dir | default('/opt/caddy') }}/Caddyfile"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ caddy_dir | default('/opt/caddy') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Sprawdź czy obraz custom-caddy:cloudflare istnieje lokalnie
+  ansible.builtin.command:
+    cmd: docker image inspect custom-caddy:cloudflare
+  register: caddy_image_check
+  failed_when: false
+  changed_when: false
+
+- name: Zbuduj obraz custom-caddy:cloudflare przez Docker CLI
+  ansible.builtin.command:
+    cmd: docker build -t custom-caddy:cloudflare .
+    chdir: "{{ caddy_dir | default('/opt/caddy') }}"
+  when: caddy_image_check.rc != 0 or caddy_dockerfile.changed
+
+- name: Uruchom stos Docker Compose z Caddy
+  community.docker.docker_compose_v2:
+    project_src: "{{ caddy_dir | default('/opt/caddy') }}"
+    state: present

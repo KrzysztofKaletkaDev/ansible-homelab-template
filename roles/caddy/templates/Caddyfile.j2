@@ -1,0 +1,56 @@
+{
+    # Globalne opcje Caddy (rejestracja certyfikatów ACME Let's Encrypt)
+    email {{ acme_email | default('admin@' + domain_name) }}
+}
+
+# Snippet dla wyzwania Cloudflare DNS-01 (dzikie karty / wildcard certs)
+(cloudflare_tls) {
+    tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+        propagation_delay 30s
+        propagation_timeout -1
+        resolvers {{ custom_dns_target_ip }}:53
+    }
+}
+
+# JEDNOLITY BLOK DLA DOMENY I WSZYSTKICH SUBDOMEN
+*.{{ domain_name }}, {{ domain_name }} {
+    import cloudflare_tls
+
+    # Router OpenWRT
+    @router host router.{{ domain_name }}
+    handle @router {
+        reverse_proxy https://{{ router_ip | default('10.0.0.1') }}:443 {
+            transport http {
+                tls_insecure_skip_verify
+            }
+        }
+    }
+
+    # Dysk QNAP NAS
+    @qnap host qnap.{{ domain_name }}
+    handle @qnap {
+        reverse_proxy https://{{ qnap_ip | default('10.0.0.2') }}:443 {
+            transport http {
+                tls_insecure_skip_verify
+            }
+        }
+    }
+
+    # Brama Homepage
+    @homepage host homepage.{{ domain_name }}
+    handle @homepage {
+        respond "Caddy Ingress OK - Homepage Gateway Ready" 200
+    }
+
+    # Menedżer Haseł Vaultwarden
+    @vaultwarden host vaultwarden.{{ domain_name }}
+    handle @vaultwarden {
+        respond "Caddy Ingress OK - Vaultwarden Gateway Ready" 200
+    }
+
+    # Domyślna odpowiedź dla nieznanych subdomen
+    handle {
+        respond "Homelab Infrastructure - Access Denied" 403
+    }
+}

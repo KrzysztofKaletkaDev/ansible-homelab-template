@@ -1,0 +1,6 @@
+---
+# Szablon zmiennych Ansible Vault dla grupy core_nodes
+# Skopiuj ten plik do vault.yml i zaszyfruj komendą:
+# ansible-vault encrypt group_vars/core_nodes/vault.yml
+
+vault_cloudflare_api_token: "YOUR_CLOUDFLARE_API_TOKEN_HERE"

@@ -1,0 +1,44 @@
+---
+# ==============================================================================
+# ROLA: Blocky DNS Resolver (roles/blocky/tasks/main.yml)
+# Wdraża konfigurację oraz kontener Blocky z automatycznym otwarciem portu 53.
+# ==============================================================================
+
+- name: Stwórz katalog dla aplikacji Blocky
+  ansible.builtin.file:
+    path: "{{ blocky_dir | default('/opt/blocky') }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Wygeneruj plik konfiguracyjny config.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ blocky_dir | default('/opt/blocky') }}/config.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ blocky_dir | default('/opt/blocky') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Otwórz port DNS (53 UDP/TCP) w zaporze firewalld
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  loop:
+    - 53/udp
+    - 53/tcp
+
+- name: Uruchom stos Docker Compose z Blocky
+  community.docker.docker_compose_v2:
+    project_src: "{{ blocky_dir | default('/opt/blocky') }}"
+    state: present
