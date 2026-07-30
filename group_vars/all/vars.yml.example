@@ -1,0 +1,17 @@
+# ==============================================================================
+# GŁÓWNE ZMIENNE INFRASTRUKTURY (group_vars/all/vars.yml.example)
+# Skopiuj ten plik do group_vars/all/vars.yml i dostosuj wartości do swoich potrzeb.
+# ==============================================================================
+
+# Główny użytkownik systemowy na serwerach docelowych (właściciel plików i kontenerów)
+ansible_user: "sysadmin"
+
+# Główna domena używana dla usług w środowisku homelab
+domain_name: "example.com"
+
+# Adres e-mail do rejestracji certyfikatów SSL/TLS w Let's Encrypt
+acme_email: "admin@example.com"
+
+# Adresy IP wewnętrznych urządzeń sieciowych (dla Reverse Proxy Caddy)
+router_ip: "10.0.0.1"
+qnap_ip: "10.0.0.2"

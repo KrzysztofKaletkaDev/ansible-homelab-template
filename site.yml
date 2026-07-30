@@ -1,0 +1,9 @@
+---
+- name: Wdrożenie podstawowej infrastruktury i DNS na AlmaLinux
+  hosts: core_nodes
+  become: yes
+
+  roles:
+    - docker
+    - blocky
+    - caddy

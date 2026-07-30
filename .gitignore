@@ -1,0 +1,28 @@
+# ==========================================
+# Ansible Temporary & Local Files
+# ==========================================
+*.retry
+*.log
+.vault_pass
+
+# ===================================================
+# Real Inventory & Environment Variables (BEZPIECZEŃSTWO)
+# Zezwalamy tylko na pliki wzorcowe *.example
+# ===================================================
+inventory/hosts.yml
+group_vars/**/*.yml
+!group_vars/**/*.yml.example
+!inventory/*.yml.example
+
+# Sensitive Ansible Vault files
+group_vars/**/vault.yml
+host_vars/**/vault.yml
+
+# ==========================================
+# Editor & OS Files
+# ==========================================
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*.un~
