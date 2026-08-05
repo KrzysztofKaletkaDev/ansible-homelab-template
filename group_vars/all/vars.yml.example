@@ -15,3 +15,7 @@ acme_email: "admin@example.com"
 # Adresy IP wewnętrznych urządzeń sieciowych (dla Reverse Proxy Caddy)
 router_ip: "10.0.0.1"
 qnap_ip: "10.0.0.2"
+
+# Wersja obrazu Caddy (musi być zgodna z tagiem bazowym w roles/caddy/templates/Dockerfile.j2)
+caddy_version: "2.11"
+caddy_image_tag: "{{ caddy_version }}-cloudflare"

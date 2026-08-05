@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: custom-caddy:cloudflare
+    image: "custom-caddy:{{ caddy_image_tag }}"
     container_name: caddy
     restart: unless-stopped
     ports:

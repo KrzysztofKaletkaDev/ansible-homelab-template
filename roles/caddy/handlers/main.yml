@@ -1,0 +1,4 @@
+---
+- name: reload caddy
+  ansible.builtin.command:
+    cmd: docker exec caddy caddy reload --config /etc/caddy/Caddyfile
