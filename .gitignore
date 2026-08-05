@@ -4,6 +4,8 @@
 *.retry
 *.log
 .vault_pass
+.cache/
+molecule/**/.molecule/
 
 # ===================================================
 # Real Inventory & Environment Variables (BEZPIECZEŃSTWO)
@@ -22,7 +24,9 @@ host_vars/**/vault.yml
 # Editor & OS Files
 # ==========================================
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .DS_Store
 *.swp
 *.un~
+.venv/
