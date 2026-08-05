@@ -32,7 +32,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
-  notify: reload caddy
+  notify: Reload caddy
 
 - name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
   ansible.builtin.template:
@@ -42,7 +42,7 @@
     group: "{{ ansible_user }}"
     mode: '0644'
 
-- name: "Sprawdź czy obraz custom-caddy:{{ caddy_image_tag }} istnieje lokalnie"
+- name: "Sprawdź czy lokalnie istnieje obraz custom-caddy:{{ caddy_image_tag }}"
   ansible.builtin.command:
     cmd: "docker image inspect custom-caddy:{{ caddy_image_tag }}"
   register: caddy_image_check
@@ -54,13 +54,14 @@
     cmd: "docker build -t custom-caddy:{{ caddy_image_tag }} ."
     chdir: "{{ caddy_dir | default('/opt/caddy') }}"
   when: caddy_image_check.rc != 0 or caddy_dockerfile.changed
+  changed_when: true
 
 - name: Otwórz porty HTTP/HTTPS (80, 443 TCP/UDP dla QUIC) w zaporze firewalld
   ansible.posix.firewalld:
     port: "{{ item }}"
-    permanent: yes
+    permanent: true
     state: enabled
-    immediate: yes
+    immediate: true
   loop:
     - 80/tcp
     - 443/tcp
@@ -70,5 +71,3 @@
   community.docker.docker_compose_v2:
     project_src: "{{ caddy_dir | default('/opt/caddy') }}"
     state: present
-
-
