@@ -19,7 +19,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
-  notify: restart blocky
+  notify: Restart blocky
 
 - name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
   ansible.builtin.template:
@@ -32,9 +32,9 @@
 - name: Otwórz port DNS (53 UDP/TCP) w zaporze firewalld
   ansible.posix.firewalld:
     port: "{{ item }}"
-    permanent: yes
+    permanent: true
     state: enabled
-    immediate: yes
+    immediate: true
   loop:
     - 53/udp
     - 53/tcp

@@ -1,3 +1,4 @@
+---
 # ==============================================================================
 # GŁÓWNE ZMIENNE INFRASTRUKTURY (group_vars/all/vars.yml.example)
 # Skopiuj ten plik do group_vars/all/vars.yml i dostosuj wartości do swoich potrzeb.

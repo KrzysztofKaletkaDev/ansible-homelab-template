@@ -1,0 +1,20 @@
+---
+# Uruchom `pre-commit install` raz po sklonowaniu repo, żeby aktywować hooki.
+# Od tej pory każdy `git commit` automatycznie odpali lint poniżej.
+# Aktualizacja wersji hooków: `pre-commit autoupdate`
+
+repos:
+  - repo: https://github.com/ansible/ansible-lint
+    rev: v26.6.0
+    hooks:
+      - id: ansible-lint
+        language_version: python3.12
+        files: \.(yaml|yml)$
+        # Pomijamy pliki .example — to szablony ze świadomie placeholderowymi wartościami
+        exclude: '\.example$'
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: ["-c", ".yamllint"]

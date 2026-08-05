@@ -1,5 +1,5 @@
 ---
-- name: restart blocky
+- name: Restart blocky
   community.docker.docker_compose_v2:
     project_src: "{{ blocky_dir | default('/opt/blocky') }}"
     state: restarted

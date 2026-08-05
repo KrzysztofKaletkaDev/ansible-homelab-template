@@ -33,16 +33,16 @@
       - containerd.io
       - docker-compose-plugin
     state: present
-    update_cache: yes
+    update_cache: true
 
 - name: Uruchom i włącz usługę Docker w systemd
   ansible.builtin.systemd:
     name: docker
-    enabled: yes
+    enabled: true
     state: started
 
 - name: Dodaj użytkownika systemowego do grupy docker
   ansible.builtin.user:
     name: "{{ ansible_user }}"
     groups: docker
-    append: yes
+    append: true
