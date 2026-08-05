@@ -19,6 +19,7 @@
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
+  notify: restart blocky
 
 - name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
   ansible.builtin.template:

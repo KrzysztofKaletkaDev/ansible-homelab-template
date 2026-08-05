@@ -4,13 +4,21 @@ ports:
   dns: 53
   http: 4000
 
-# 1. GŁÓWNE SERWERY UPSTREAM
+# 1. GŁÓWNE SERWERY UPSTREAM — szyfrowane przez DoH (port 443)
 upstreams:
   groups:
     default:
-      - 1.1.1.1
-      - 1.0.0.1
-      - 9.9.9.9
+      - https://1.1.1.1/dns-query
+      - https://1.0.0.1/dns-query
+      - https://9.9.9.9/dns-query
+      - https://149.112.112.112/dns-query
+  strategy: parallel_best
+  timeout: 5s
+
+# Serwery używane do rozwiązywania nazw hostów przy pobieraniu list blokujących.
+bootstrapDns:
+  - tcp+udp:1.1.1.1
+  - tcp+udp:9.9.9.9
 
 # 2. PRZEPISYWANIE DNS / CUSTOM DNS
 customDNS:
@@ -22,15 +30,19 @@ customDNS:
     "qnap.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "router.{{ domain_name }}": "{{ custom_dns_target_ip }}"
 
-# 3. BLOKOWANIE REKLAM (denylists)
+# 3. BLOKOWANIE REKLAM / TRACKERÓW / MALWARE
 blocking:
   denylists:
     ads_and_tracking:
       - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
       - https://adaway.org/hosts.txt
+      - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt
     poland_spec:
       - https://raw.githubusercontent.com/PolishFiltersTeam/KADhosts/master/KADhosts.txt
       - https://hole.cert.pl/domains/v2/domains_hosts.txt
+    malware:
+      - https://urlhaus.abuse.ch/downloads/hostfile/
+      - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt
 
   # 4. WYJĄTKI / WHITELIST
   allowlists:
@@ -44,12 +56,12 @@ blocking:
     default:
       - ads_and_tracking
       - poland_spec
+      - malware
 
   blockType: zeroIp
 
-  # w 0.25 timeout pobierania i okres odświeżania list są zagnieżdżone w "loading"
   loading:
-    refreshPeriod: 4h
+    refreshPeriod: 12h
     downloads:
       timeout: 4m
 
