@@ -20,3 +20,9 @@ qnap_ip: "10.0.0.2"
 # Wersja obrazu Caddy (musi być zgodna z tagiem bazowym w roles/caddy/templates/Dockerfile.j2)
 caddy_version: "2.11"
 caddy_image_tag: "{{ caddy_version }}-cloudflare"
+
+# Katalog danych Vaultwarden (self-hosted menedżer haseł).
+# Jeśli migrujesz istniejącą instancję, umieść stary folder data/ pod
+# {{ vaultwarden_dir }}/data przed lub zaraz po pierwszym uruchomieniu playbooka.
+vaultwarden_dir: "/opt/vaultwarden"
+vaultwarden_version: "latest"
