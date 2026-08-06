@@ -1,0 +1,18 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    environment:
+      - TZ={{ timezone | default('Europe/Warsaw') }}
+      - HOMEPAGE_ALLOWED_HOSTS=homepage.{{ domain_name }}
+    volumes:
+      - {{ homepage_dir | default('/opt/homepage') }}/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/hostfs:ro
+    networks:
+      - caddy-ingress
+
+networks:
+  caddy-ingress:
+    external: true

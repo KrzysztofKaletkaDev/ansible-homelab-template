@@ -1,0 +1,33 @@
+- Infrastruktura:
+    - Caddy Reverse Proxy:
+        icon: caddy
+        description: Reverse proxy i automatyczne certyfikaty TLS (ACME DNS-01)
+        container: caddy
+
+    - Homepage Dashboard:
+        icon: homepage
+        href: https://homepage.{{ domain_name }}
+        description: Główny pulpit nawigacyjny
+        container: homepage
+
+    - QNAP TS-264:
+        icon: qnap.svg
+        href: https://qnap.{{ domain_name }}
+        description: Główny magazyn danych i hypervisor
+
+    - Router Brzegowy:
+        icon: openwrt.svg
+        href: https://router.{{ domain_name }}
+        description: Zarządzanie bramą i siecią Wi-Fi
+
+- Usługi Sieciowe:
+    - Blocky DNS:
+        icon: blocky
+        description: Lokalny serwer DNS i ochrona sieci (ad-blocking)
+        container: blocky
+
+    - Vaultwarden:
+        icon: vaultwarden.svg
+        href: https://vaultwarden.{{ domain_name }}
+        description: Prywatny i bezpieczny skarbiec haseł
+        container: vaultwarden

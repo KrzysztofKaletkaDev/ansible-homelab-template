@@ -26,3 +26,6 @@ caddy_image_tag: "{{ caddy_version }}-cloudflare"
 # {{ vaultwarden_dir }}/data przed lub zaraz po pierwszym uruchomieniu playbooka.
 vaultwarden_dir: "/opt/vaultwarden"
 vaultwarden_version: "latest"
+
+# Katalog konfiguracji Homepage (dashboard z auto-wykrywaniem kontenerów)
+homepage_dir: "/opt/homepage"
