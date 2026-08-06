@@ -1,0 +1,44 @@
+---
+# ==============================================================================
+# ROLA: Homepage (roles/homepage/tasks/main.yml)
+# Wdraża dashboard Homepage z auto-wykrywaniem kontenerów przez docker.sock
+# ==============================================================================
+
+- name: Stwórz strukturę katalogów dla Homepage
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ homepage_dir | default('/opt/homepage') }}"
+    - "{{ homepage_dir | default('/opt/homepage') }}/config"
+
+- name: Wygeneruj pliki konfiguracyjne Homepage z szablonów Jinja2
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ homepage_dir | default('/opt/homepage') }}/config/{{ item }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  loop:
+    - docker.yaml
+    - settings.yaml
+    - widgets.yaml
+    - services.yaml
+    - bookmarks.yaml
+  notify: Restart homepage
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ homepage_dir | default('/opt/homepage') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Uruchom stos Docker Compose z Homepage
+  community.docker.docker_compose_v2:
+    project_src: "{{ homepage_dir | default('/opt/homepage') }}"
+    state: present

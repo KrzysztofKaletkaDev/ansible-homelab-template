@@ -40,7 +40,7 @@
     # Brama Homepage
     @homepage host homepage.{{ domain_name }}
     handle @homepage {
-        respond "Caddy Ingress OK - Homepage Gateway Ready" 200
+        reverse_proxy homepage:3000
     }
 
     @vaultwarden host vaultwarden.{{ domain_name }}
