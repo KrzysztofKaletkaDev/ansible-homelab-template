@@ -2,7 +2,7 @@
 
 A production-grade, declarative **Infrastructure as Code (IaC)** template for automating core homelab services on Enterprise Linux (AlmaLinux / RHEL 9).
 
-This project demonstrates an automated deployment of a containerized infrastructure stack featuring an internal DNS resolver with ad-blocking, a custom-compiled Caddy reverse proxy with automated Let's Encrypt TLS certificates via the Cloudflare DNS-01 challenge, and strict security isolation via Ansible Vault.
+This project demonstrates an automated deployment of a containerized infrastructure stack featuring an internal DNS resolver with ad-blocking, a custom-compiled Caddy reverse proxy with automated Let's Encrypt TLS certificates via the Cloudflare DNS-01 challenge, a self-hosted password manager (Vaultwarden), a service dashboard (Homepage), and strict security isolation via Ansible Vault.
 
 ---
 
@@ -28,10 +28,12 @@ graph TD
 
 ## 🚀 Key Features & Architectural Design
 
-- **Infrastructure as Code (IaC):** Idempotent Ansible playbooks with modular, custom-crafted roles (`docker`, `blocky`, `caddy`).
+- **Infrastructure as Code (IaC):** Idempotent Ansible playbooks with modular, custom-crafted roles (`docker`, `blocky`, `caddy`, `vaultwarden`, `homepage`).
 - **Multi-Stage Container Compilation:** Custom-built Caddy Docker image using `xcaddy` to embed the Cloudflare DNS module for automated wildcard SSL certificate issuance (`*.domain.com`).
 - **Automated ACME DNS-01 Challenge:** Automated SSL/TLS issuance without exposing HTTP ports to the public Internet.
 - **Ad-Blocking & Privacy DNS:** Containerized Blocky DNS resolver with local DNS rewrites (`customDNS`) and external blocklists.
+- **Self-Hosted Password Manager:** Vaultwarden (Bitwarden-compatible server) deployed behind Caddy, with no ports published directly — reachable only through the reverse proxy's internal Docker network.
+- **Unified Service Dashboard:** Homepage, auto-discovering running containers via the Docker socket (read-only) and surfacing host resource stats.
 - **Enterprise DevSecOps Practices:** Strict separation of environment logic, topology, and encrypted secrets using Ansible Vault. Sensitive data is sanitized from version control via `.gitignore` patterns.
 - **System Integration:** Automated configuration of system services (`systemd`), group privileges, and dynamic package repository resolution on Enterprise Linux.
 
@@ -54,7 +56,9 @@ graph TD
 └── roles/
     ├── docker/                 # Official Docker CE Engine & Compose Plugin installation
     ├── blocky/                 # Blocky DNS Resolver container deployment & configuration
-    └── caddy/                  # Custom Caddy Reverse Proxy deployment & xcaddy build
+    ├── caddy/                  # Custom Caddy Reverse Proxy deployment & xcaddy build
+    ├── vaultwarden/            # Vaultwarden (Bitwarden-compatible) password manager deployment
+    └── homepage/               # Homepage service dashboard deployment & configuration
 ```
 
 ---
@@ -101,7 +105,7 @@ ansible-playbook -i inventory/hosts.yml site.yml --ask-vault-pass
 ## 🔒 Security Principles Applied
 
 - **Zero Secret Leakage:** `.gitignore` enforces strictly parameterized `.example` templates while excluding production variables and state files.
-- **Least Privilege Enforcement:** Service configuration files generated on target nodes strictly enforce system permissions (`0644` for files, `0755` for directories).
+- **Least Privilege Enforcement:** Service configuration files generated on target nodes strictly enforce system permissions (`0644` for files, `0755` for directories, `0600` for any generated file embedding a Vault secret — e.g. Caddy's `docker-compose.yml` with the Cloudflare API token).
 - **Encrypted State:** All API tokens and credentials stored within the repository structure are encrypted using AES-256 via Ansible Vault.
 
 ---
