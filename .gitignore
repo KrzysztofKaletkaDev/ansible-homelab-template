@@ -30,3 +30,6 @@ host_vars/**/vault.yml
 *.swp
 *.un~
 .venv/
+.vagrant/
+.ansible/
+.claude/
