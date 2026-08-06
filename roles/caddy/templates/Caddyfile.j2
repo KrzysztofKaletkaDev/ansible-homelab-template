@@ -43,10 +43,11 @@
         respond "Caddy Ingress OK - Homepage Gateway Ready" 200
     }
 
-    # Menedżer Haseł Vaultwarden
     @vaultwarden host vaultwarden.{{ domain_name }}
     handle @vaultwarden {
-        respond "Caddy Ingress OK - Vaultwarden Gateway Ready" 200
+        reverse_proxy /notifications/hub/negotiate vaultwarden:80
+        reverse_proxy /notifications/hub vaultwarden:3012
+        reverse_proxy vaultwarden:80
     }
 
     # Domyślna odpowiedź dla nieznanych subdomen

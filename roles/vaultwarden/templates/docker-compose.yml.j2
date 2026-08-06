@@ -1,0 +1,17 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:{{ vaultwarden_version | default('latest') }}
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      - WEBSOCKET_ENABLED=true
+      - SIGNUPS_ALLOWED=false
+      - TZ={{ timezone | default('Europe/Warsaw') }}
+    volumes:
+      - {{ vaultwarden_dir | default('/opt/vaultwarden') }}/data:/data
+    networks:
+      - caddy-ingress
+
+networks:
+  caddy-ingress:
+    external: true

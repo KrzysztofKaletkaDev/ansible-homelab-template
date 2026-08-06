@@ -1,0 +1,38 @@
+---
+# ==============================================================================
+# ROLA: Vaultwarden (roles/vaultwarden/tasks/main.yml)
+# Wdraża kontener Vaultwarden (self-hosted Bitwarden) za Caddy reverse proxy.
+#
+# UWAGA (migracja istniejącej instancji):
+# Ta rola NIE inicjalizuje ani nie nadpisuje danych — `state: directory`
+# w pierwszym zadaniu jest bezpieczne dla już istniejącej zawartości.
+# Jeśli migrujesz stary folder `data/` (baza, klucze RSA, załączniki),
+# skopiuj go (np. rsync/scp) na hosta docelowego pod:
+#   {{ vaultwarden_dir | default('/opt/vaultwarden') }}/data
+# przed lub zaraz po pierwszym uruchomieniu playbooka — kontener podniesie
+# istniejącą bazę, nie utworzy nowego użytkownika.
+# ==============================================================================
+
+- name: Stwórz strukturę katalogów dla Vaultwarden
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ vaultwarden_dir | default('/opt/vaultwarden') }}"
+    - "{{ vaultwarden_dir | default('/opt/vaultwarden') }}/data"
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ vaultwarden_dir | default('/opt/vaultwarden') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Uruchom stos Docker Compose z Vaultwarden
+  community.docker.docker_compose_v2:
+    project_src: "{{ vaultwarden_dir | default('/opt/vaultwarden') }}"
+    state: present
