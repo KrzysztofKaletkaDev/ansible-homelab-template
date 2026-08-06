@@ -10,7 +10,7 @@ services:
     environment:
       - CLOUDFLARE_API_TOKEN={{ vault_cloudflare_api_token }}
     volumes:
-      - {{ caddy_dir | default('/opt/caddy') }}/Caddyfile:/etc/caddy/Caddyfile
+      - {{ caddy_dir | default('/opt/caddy') }}/etc:/etc/caddy
       - {{ caddy_dir | default('/opt/caddy') }}/data:/data
       - {{ caddy_dir | default('/opt/caddy') }}/config:/config
     networks:

@@ -13,6 +13,7 @@
     mode: '0755'
   loop:
     - "{{ caddy_dir | default('/opt/caddy') }}"
+    - "{{ caddy_dir | default('/opt/caddy') }}/etc"
     - "{{ caddy_dir | default('/opt/caddy') }}/data"
     - "{{ caddy_dir | default('/opt/caddy') }}/config"
 
@@ -28,7 +29,7 @@
 - name: Wygeneruj plik Caddyfile z szablonu Jinja2
   ansible.builtin.template:
     src: Caddyfile.j2
-    dest: "{{ caddy_dir | default('/opt/caddy') }}/Caddyfile"
+    dest: "{{ caddy_dir | default('/opt/caddy') }}/etc/Caddyfile"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
     mode: '0644'
