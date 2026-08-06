@@ -3,7 +3,9 @@
 ## Co to za projekt
 Ansible IaC dla jednowęzłowego homelabu na AlmaLinux 9: DNS z ad-blockingiem
 (Blocky), reverse proxy z auto-TLS przez Cloudflare DNS-01 (Caddy, budowany
-custom obrazem xcaddy), wszystko na Dockerze. Docelowo jeden host (`core_nodes`).
+custom obrazem xcaddy), self-hosted menedżer haseł (Vaultwarden) i dashboard
+usług (Homepage) — wszystko na Dockerze, spięte wspólną siecią `caddy-ingress`.
+Docelowo jeden host (`core_nodes`).
 
 ## Twarde zasady
 
@@ -24,14 +26,20 @@ custom obrazem xcaddy), wszystko na Dockerze. Docelowo jeden host (`core_nodes`)
 ## Struktura, którą warto znać
 
 - `site.yml` — główny playbook, kolejność ról ma znaczenie: `docker` musi
-  iść przed `blocky` i `caddy`, bo obie zależą od zainstalowanego Dockera.
+  iść przed resztą (wszystkie zależą od zainstalowanego Dockera), a `caddy`
+  musi iść przed `vaultwarden` i `homepage` — to caddy tworzy sieć Docker
+  `caddy-ingress` (`driver: bridge`), do której `vaultwarden`/`homepage`
+  dołączają się jako `external: true`. Zmiana tej kolejności wywali wdrożenie.
 - `roles/*/tasks/main.yml` — logika; `roles/*/templates/*.j2` — konfiguracja
   generowana Jinja2; `roles/*/handlers/main.yml` — restart/reload po zmianie.
-- Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń) żyją
+- Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń,
+  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`) żyją
   w `group_vars/all/vars.yml` (nieobecny w repo, tylko `.example`).
   Sekrety — w `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
-- `roles/*/molecule/default/` — testy izolowane per rola (Molecule + Docker
-  driver). Uruchamiane komendą `molecule test` z wnętrza katalogu roli.
+- Testy Molecule (`roles/*/molecule/default/`) NIE są jeszcze skonfigurowane
+  dla żadnej roli — jedyna realna weryfikacja przed produkcją to
+  `vagrant up`/`vagrant provision` (patrz `Vagrantfile`). Molecule pozostaje
+  zalecanym, ale niewdrożonym sposobem testowania — nie zakładaj, że istnieje.
 
 ## Konwencje kodu
 
