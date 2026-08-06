@@ -40,7 +40,7 @@
     dest: "{{ caddy_dir | default('/opt/caddy') }}/docker-compose.yml"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0644'
+    mode: '0600'
 
 - name: "Sprawdź czy lokalnie istnieje obraz custom-caddy:{{ caddy_image_tag }}"
   ansible.builtin.command:
