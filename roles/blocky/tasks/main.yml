@@ -29,7 +29,7 @@
     group: "{{ ansible_user }}"
     mode: '0644'
 
-- name: Otwórz port DNS (53 UDP/TCP) w zaporze firewalld
+- name: Otwórz porty DNS (53) i metryk Prometheusa (4000) w zaporze firewalld
   ansible.posix.firewalld:
     port: "{{ item }}"
     permanent: true
@@ -38,6 +38,7 @@
   loop:
     - 53/udp
     - 53/tcp
+    - 4000/tcp
 
 - name: Uruchom stos Docker Compose z Blocky
   community.docker.docker_compose_v2:

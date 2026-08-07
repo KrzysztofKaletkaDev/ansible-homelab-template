@@ -29,3 +29,10 @@ vaultwarden_version: "latest"
 
 # Homepage configuration directory (dashboard with automatic container discovery)
 homepage_dir: "/opt/homepage"
+
+# Monitoring stack directory (Prometheus, node_exporter, cAdvisor, Grafana)
+monitoring_dir: "/opt/monitoring"
+prometheus_version: "v2.55.1"
+node_exporter_version: "v1.8.2"
+cadvisor_version: "v0.49.1"
+grafana_version: "11.2.0"
