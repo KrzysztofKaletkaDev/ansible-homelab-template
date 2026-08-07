@@ -1,7 +1,7 @@
 ---
 # ==============================================================================
-# ROLA: Homepage (roles/homepage/tasks/main.yml)
-# Wdraża dashboard Homepage z auto-wykrywaniem kontenerów przez docker.sock
+# ROLE: Homepage (roles/homepage/tasks/main.yml)
+# Deploys the Homepage dashboard with automatic container discovery via docker.sock
 # ==============================================================================
 
 - name: Stwórz strukturę katalogów dla Homepage

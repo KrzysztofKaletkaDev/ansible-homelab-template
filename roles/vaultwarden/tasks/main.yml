@@ -1,16 +1,16 @@
 ---
 # ==============================================================================
-# ROLA: Vaultwarden (roles/vaultwarden/tasks/main.yml)
-# Wdraża kontener Vaultwarden (self-hosted Bitwarden) za Caddy reverse proxy.
+# ROLE: Vaultwarden (roles/vaultwarden/tasks/main.yml)
+# Deploys the Vaultwarden container (self-hosted Bitwarden) behind the Caddy reverse proxy.
 #
-# UWAGA (migracja istniejącej instancji):
-# Ta rola NIE inicjalizuje ani nie nadpisuje danych — `state: directory`
-# w pierwszym zadaniu jest bezpieczne dla już istniejącej zawartości.
-# Jeśli migrujesz stary folder `data/` (baza, klucze RSA, załączniki),
-# skopiuj go (np. rsync/scp) na hosta docelowego pod:
+# NOTE (migrating an existing instance):
+# This role does NOT initialize or overwrite data — `state: directory`
+# in the first task is safe for already existing content.
+# If you are migrating an old `data/` folder (database, RSA keys, attachments),
+# copy it (e.g. via rsync/scp) to the target host at:
 #   {{ vaultwarden_dir | default('/opt/vaultwarden') }}/data
-# przed lub zaraz po pierwszym uruchomieniu playbooka — kontener podniesie
-# istniejącą bazę, nie utworzy nowego użytkownika.
+# before or right after the first playbook run — the container will pick up
+# the existing database instead of creating a new user.
 # ==============================================================================
 
 - name: Stwórz strukturę katalogów dla Vaultwarden

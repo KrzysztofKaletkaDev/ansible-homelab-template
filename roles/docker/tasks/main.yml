@@ -1,6 +1,6 @@
 ---
 # ==============================================================================
-# ROLA: Docker & Docker Compose Engine (roles/docker/tasks/main.yml)
+# ROLE: Docker & Docker Compose Engine (roles/docker/tasks/main.yml)
 # ==============================================================================
 
 - name: Zainstaluj dnf-plugins-core

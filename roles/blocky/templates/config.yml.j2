@@ -4,7 +4,7 @@ ports:
   dns: 53
   http: 4000
 
-# 1. GŁÓWNE SERWERY UPSTREAM — szyfrowane przez DoH (port 443)
+# 1. MAIN UPSTREAM SERVERS — encrypted via DoH (port 443)
 upstreams:
   groups:
     default:
@@ -15,12 +15,12 @@ upstreams:
   strategy: parallel_best
   timeout: 5s
 
-# Serwery używane do rozwiązywania nazw hostów przy pobieraniu list blokujących.
+# Servers used to resolve hostnames when downloading blocklists.
 bootstrapDns:
   - tcp+udp:1.1.1.1
   - tcp+udp:9.9.9.9
 
-# 2. PRZEPISYWANIE DNS / CUSTOM DNS
+# 2. DNS REWRITING / CUSTOM DNS
 customDNS:
   customTTL: 1h
   mapping:
@@ -29,7 +29,7 @@ customDNS:
     "qnap.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "router.{{ domain_name }}": "{{ custom_dns_target_ip }}"
 
-# 3. BLOKOWANIE REKLAM / TRACKERÓW / MALWARE
+# 3. BLOCKING ADS / TRACKERS / MALWARE
 blocking:
   denylists:
     ads_and_tracking:
@@ -43,14 +43,14 @@ blocking:
       - https://urlhaus.abuse.ch/downloads/hostfile/
       - https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/tif.txt
 
-  # 4. WYJĄTKI / WHITELIST
+  # 4. EXCEPTIONS / WHITELIST
   allowlists:
     main_adguard_lists:
       - connectivitycheck.gstatic.com
       - connectivitycheck.android.com
       - service.minerva.devices.a2z.com
 
-  # 5. ASSIGNMENT GRUP
+  # 5. GROUP ASSIGNMENT
   clientGroupsBlock:
     default:
       - ads_and_tracking

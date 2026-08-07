@@ -6,7 +6,7 @@ services:
     ports:
       - "80:80/tcp"
       - "443:443/tcp"
-      - "443:443/udp" # Obsługa HTTP/3 (QUIC)
+      - "443:443/udp" # HTTP/3 support (QUIC)
     environment:
       - CLOUDFLARE_API_TOKEN={{ vault_cloudflare_api_token }}
     volumes:

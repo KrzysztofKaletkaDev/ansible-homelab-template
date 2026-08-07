@@ -1,7 +1,7 @@
 ---
 # ==============================================================================
-# ROLA: Blocky DNS Resolver (roles/blocky/tasks/main.yml)
-# Wdraża konfigurację oraz kontener Blocky z automatycznym otwarciem portu 53.
+# ROLE: Blocky DNS Resolver (roles/blocky/tasks/main.yml)
+# Deploys the configuration and Blocky container with automatic opening of port 53.
 # ==============================================================================
 
 - name: Stwórz katalog dla aplikacji Blocky
