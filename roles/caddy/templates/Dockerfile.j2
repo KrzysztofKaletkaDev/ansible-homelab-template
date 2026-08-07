@@ -1,4 +1,4 @@
-# Multi-stage build: Kompilacja Caddy z wtyczką cloudflare DNS
+# Multi-stage build: Compiling Caddy with the cloudflare DNS plugin
 FROM caddy:{{ caddy_version }}-builder AS builder
 
 RUN xcaddy build \

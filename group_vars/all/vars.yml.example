@@ -1,31 +1,31 @@
 ---
 # ==============================================================================
-# GŁÓWNE ZMIENNE INFRASTRUKTURY (group_vars/all/vars.yml.example)
-# Skopiuj ten plik do group_vars/all/vars.yml i dostosuj wartości do swoich potrzeb.
+# MAIN INFRASTRUCTURE VARIABLES (group_vars/all/vars.yml.example)
+# Copy this file to group_vars/all/vars.yml and adjust the values to your needs.
 # ==============================================================================
 
-# Główny użytkownik systemowy na serwerach docelowych (właściciel plików i kontenerów)
+# Main system user on target servers (owner of files and containers)
 ansible_user: "sysadmin"
 
-# Główna domena używana dla usług w środowisku homelab
+# Main domain used for services in the homelab environment
 domain_name: "example.com"
 
-# Adres e-mail do rejestracji certyfikatów SSL/TLS w Let's Encrypt
+# Email address for registering SSL/TLS certificates with Let's Encrypt
 acme_email: "admin@example.com"
 
-# Adresy IP wewnętrznych urządzeń sieciowych (dla Reverse Proxy Caddy)
+# IP addresses of internal network devices (for the Caddy Reverse Proxy)
 router_ip: "10.0.0.1"
 qnap_ip: "10.0.0.2"
 
-# Wersja obrazu Caddy (musi być zgodna z tagiem bazowym w roles/caddy/templates/Dockerfile.j2)
+# Caddy image version (must match the base tag in roles/caddy/templates/Dockerfile.j2)
 caddy_version: "2.11"
 caddy_image_tag: "{{ caddy_version }}-cloudflare"
 
-# Katalog danych Vaultwarden (self-hosted menedżer haseł).
-# Jeśli migrujesz istniejącą instancję, umieść stary folder data/ pod
-# {{ vaultwarden_dir }}/data przed lub zaraz po pierwszym uruchomieniu playbooka.
+# Vaultwarden data directory (self-hosted password manager).
+# If you are migrating an existing instance, place the old data/ folder under
+# {{ vaultwarden_dir }}/data before or right after the first playbook run.
 vaultwarden_dir: "/opt/vaultwarden"
 vaultwarden_version: "latest"
 
-# Katalog konfiguracji Homepage (dashboard z auto-wykrywaniem kontenerów)
+# Homepage configuration directory (dashboard with automatic container discovery)
 homepage_dir: "/opt/homepage"

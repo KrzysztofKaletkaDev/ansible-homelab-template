@@ -1,7 +1,7 @@
 ---
 # ==============================================================================
-# ROLA: Caddy Reverse Proxy (roles/caddy/tasks/main.yml)
-# Kompiluje obraz Caddy z modułem DNS Cloudflare i wdraża Reverse Proxy.
+# ROLE: Caddy Reverse Proxy (roles/caddy/tasks/main.yml)
+# Compiles the Caddy image with the Cloudflare DNS module and deploys the Reverse Proxy.
 # ==============================================================================
 
 - name: Stwórz strukturę katalogów dla Caddy

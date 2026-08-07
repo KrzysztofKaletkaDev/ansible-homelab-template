@@ -1,10 +1,10 @@
 # -*- mode: ruby -*-
 # ==============================================================================
-# Jednorazowa VM do testowania site.yml PRZED wdrożeniem na realny hosta.
-# Użycie:
-#   vagrant up        -> stawia VM i od razu odpala site.yml
-#   vagrant provision  -> ponownie uruchamia playbook na już postawionej VM
-#   vagrant destroy -f -> kasuje VM całkowicie
+# One-off VM for testing site.yml BEFORE deploying to a real host.
+# Usage:
+#   vagrant up        -> spins up the VM and immediately runs site.yml
+#   vagrant provision  -> reruns the playbook on an already provisioned VM
+#   vagrant destroy -f -> destroys the VM completely
 # ==============================================================================
 
 Vagrant.configure("2") do |config|
@@ -13,7 +13,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.network "private_network", ip: "192.168.56.10"
 
-  # Zasoby VM — dostosuj do możliwości swojej maszyny
+  # VM resources — adjust to your machine's capabilities
   config.vm.provider "libvirt" do |lv|
     lv.memory = 2048
     lv.cpus = 2
@@ -33,14 +33,14 @@ SHELL
     ansible.playbook = "site.yml"
     ansible.vault_password_file = ".vault_pass"
 
-    # Vagrant tworzy własny inventory w locie i przypisuje tę VM
-    # do grupy core_nodes, dokładnie tej, którą celuje site.yml
+    # Vagrant creates its own inventory on the fly and assigns this VM
+    # to the core_nodes group, exactly the one targeted by site.yml
     ansible.groups = {
       "core_nodes" => ["default"]
     }
 
-    # Box almalinux/9 loguje się jako "vagrant", nie "sysadmin" z group_vars/all/vars.yml
-    # — nadpisujemy to tylko na potrzeby testu, żeby nie ruszać właściwego configu
+    # The almalinux/9 box logs in as "vagrant", not "sysadmin" from group_vars/all/vars.yml
+    # — we override this only for the test, so as not to touch the actual config
     ansible.extra_vars = {
       ansible_user: "vagrant",
       vault_cloudflare_api_token: "TEST-DUMMY-TOKEN-NIE-PRAWDZIWY",
