@@ -50,6 +50,16 @@ Docelowo jeden host (`core_nodes`).
 - Każda zmiana w plikach generujących sekrety lub otwierających porty
   (firewalld) wymaga wyjaśnienia w opisie commita, dlaczego jest bezpieczna.
 
+### Konwencje językowe
+
+- Nazwy tasków Ansible (`name:`) — po polsku, zgodnie z resztą repo.
+- Komentarze w kodzie (`#` w plikach `.yml`, `.yml.j2`, `.cfg`, `.gitignore`,
+  `.ansible-lint` itp.) — po angielsku.
+- Komunikaty commitów — po angielsku, w formacie Conventional Commits
+  (`feat:`, `fix:`, `docs:`, `chore:` itd.).
+- `README.md` — po angielsku.
+- `CLAUDE.md` — po polsku.
+
 ## Czego NIE rób bez pytania
 
 - Nie zmieniaj kolejności ról w `site.yml` bez wyjaśnienia zależności.
