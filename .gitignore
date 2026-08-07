@@ -8,8 +8,8 @@
 molecule/**/.molecule/
 
 # ===================================================
-# Real Inventory & Environment Variables (BEZPIECZEŃSTWO)
-# Zezwalamy tylko na pliki wzorcowe *.example
+# Real Inventory & Environment Variables (SECURITY)
+# Only allow template files *.example
 # ===================================================
 inventory/hosts.yml
 group_vars/**/*.yml
