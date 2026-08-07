@@ -57,6 +57,10 @@ Docelowo jeden host (`core_nodes`).
   `.ansible-lint` itp.) — po angielsku.
 - Komunikaty commitów — po angielsku, w formacie Conventional Commits
   (`feat:`, `fix:`, `docs:`, `chore:` itd.).
+- Nie dodawaj trailera `Co-Authored-By: Claude ...` (ani żadnego innego
+  AI) do commitów — sposób pracy z Claude Code nad tym repo jest już
+  opisany w tym pliku (CLAUDE.md), więc taki trailer jest zbędny i nie
+  powinien pojawiać się w historii.
 - `README.md` — po angielsku.
 - `CLAUDE.md` — po polsku.
 
