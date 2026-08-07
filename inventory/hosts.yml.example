@@ -1,8 +1,8 @@
 ---
 # ==============================================================================
-# SZABLON INWENTARZA (inventory/hosts.yml.example)
-# Skopiuj ten plik, usuń rozszerzenie .example (zapisz jako hosts.yml)
-# i podmień przykładowe adresy IP na rzeczywiste adresy w Twojej sieci LAN.
+# INVENTORY TEMPLATE (inventory/hosts.yml.example)
+# Copy this file, remove the .example extension (save it as hosts.yml)
+# and replace the example IP addresses with real addresses in your LAN.
 # ==============================================================================
 
 all:
@@ -10,8 +10,8 @@ all:
     core_nodes:
       hosts:
         alma-node1:
-          # Główny adres IP serwera (np. maszyny wirtualnej), na którym Ansible zainstaluje usługi
+          # Main IP address of the server (e.g. a virtual machine) on which Ansible will install the services
           ansible_host: 10.0.0.10
 
-          # Adres IP usługi DNS (np. kontenera Blocky/AdGuard), na który ma wskazywać ruch
+          # IP address of the DNS service (e.g. the Blocky/AdGuard container) that traffic should point to
           custom_dns_target_ip: 10.0.0.10

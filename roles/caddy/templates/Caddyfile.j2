@@ -1,9 +1,9 @@
 {
-    # Globalne opcje Caddy (rejestracja certyfikatów ACME Let's Encrypt)
+    # Global Caddy options (ACME Let's Encrypt certificate registration)
     email {{ acme_email | default('admin@' + domain_name) }}
 }
 
-# Snippet dla wyzwania Cloudflare DNS-01 (dzikie karty / wildcard certs)
+# Snippet for the Cloudflare DNS-01 challenge (wildcard certs)
 (cloudflare_tls) {
     tls {
         dns cloudflare {$CLOUDFLARE_API_TOKEN}
@@ -13,11 +13,11 @@
     }
 }
 
-# JEDNOLITY BLOK DLA DOMENY I WSZYSTKICH SUBDOMEN
+# UNIFIED BLOCK FOR THE DOMAIN AND ALL SUBDOMAINS
 *.{{ domain_name }}, {{ domain_name }} {
     import cloudflare_tls
 
-    # Router OpenWRT
+    # OpenWRT router
     @router host router.{{ domain_name }}
     handle @router {
         reverse_proxy https://{{ router_ip | default('10.0.0.1') }}:443 {
@@ -27,7 +27,7 @@
         }
     }
 
-    # Dysk QNAP NAS
+    # QNAP NAS drive
     @qnap host qnap.{{ domain_name }}
     handle @qnap {
         reverse_proxy https://{{ qnap_ip | default('10.0.0.2') }}:443 {
@@ -37,7 +37,7 @@
         }
     }
 
-    # Brama Homepage
+    # Homepage gateway
     @homepage host homepage.{{ domain_name }}
     handle @homepage {
         reverse_proxy homepage:3000
@@ -50,7 +50,7 @@
         reverse_proxy vaultwarden:80
     }
 
-    # Domyślna odpowiedź dla nieznanych subdomen
+    # Default response for unknown subdomains
     handle {
         respond "Homelab Infrastructure - Access Denied" 403
     }
