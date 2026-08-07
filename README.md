@@ -1,5 +1,7 @@
 # Ansible Homelab Infrastructure Template
 
+[![Lint](https://github.com/KrzysztofKaletkaDev/ansible-homelab-template/actions/workflows/lint.yml/badge.svg)](https://github.com/KrzysztofKaletkaDev/ansible-homelab-template/actions/workflows/lint.yml)
+
 A production-grade, declarative **Infrastructure as Code (IaC)** template for automating core homelab services on Enterprise Linux (AlmaLinux / RHEL 9).
 
 This project demonstrates an automated deployment of a containerized infrastructure stack featuring an internal DNS resolver with ad-blocking, a custom-compiled Caddy reverse proxy with automated Let's Encrypt TLS certificates via the Cloudflare DNS-01 challenge, a self-hosted password manager (Vaultwarden), a service dashboard (Homepage), and strict security isolation via Ansible Vault.
