@@ -26,7 +26,7 @@ services:
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:{{ cadvisor_version | default('v0.49.1') }}
+    image: ghcr.io/google/cadvisor:{{ cadvisor_version | default('v0.60.5') }}
     container_name: cadvisor
     restart: unless-stopped
     privileged: true
