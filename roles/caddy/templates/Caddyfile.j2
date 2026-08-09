@@ -50,6 +50,12 @@
         reverse_proxy vaultwarden:80
     }
 
+    # Grafana monitoring dashboards
+    @grafana host grafana.{{ domain_name }}
+    handle @grafana {
+        reverse_proxy grafana:3000
+    }
+
     # Default response for unknown subdomains
     handle {
         respond "Homelab Infrastructure - Access Denied" 403

@@ -4,6 +4,12 @@ ports:
   dns: 53
   http: 4000
 
+# Prometheus metrics endpoint, exposed on the http port above at /metrics
+# (scraped by the monitoring role's Prometheus instance)
+prometheus:
+  enable: true
+  path: /metrics
+
 # 1. MAIN UPSTREAM SERVERS — encrypted via DoH (port 443)
 upstreams:
   groups:
@@ -26,6 +32,7 @@ customDNS:
   mapping:
     "homepage.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "vaultwarden.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+    "grafana.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "qnap.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "router.{{ domain_name }}": "{{ custom_dns_target_ip }}"
 

@@ -1,0 +1,63 @@
+---
+# ==============================================================================
+# ROLE: Monitoring Stack (roles/monitoring/tasks/main.yml)
+# Deploys Prometheus, node_exporter, cAdvisor and Grafana behind the Caddy
+# reverse proxy, with Grafana dashboards provisioned as code.
+# ==============================================================================
+
+- name: Stwórz strukturę katalogów konfiguracyjnych dla stosu monitoringu
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ monitoring_dir | default('/opt/monitoring') }}"
+    - "{{ monitoring_dir | default('/opt/monitoring') }}/config/prometheus"
+    - "{{ monitoring_dir | default('/opt/monitoring') }}/config/grafana/provisioning/datasources"
+    - "{{ monitoring_dir | default('/opt/monitoring') }}/config/grafana/provisioning/dashboards"
+    - "{{ monitoring_dir | default('/opt/monitoring') }}/config/grafana/dashboards"
+
+- name: Stwórz katalogi danych z uprawnieniami dla kont systemowych kontenerów
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.owner }}"
+    mode: '0755'
+  loop:
+    # UID 65534 (nobody) - domyślny użytkownik obrazu prom/prometheus
+    - path: "{{ monitoring_dir | default('/opt/monitoring') }}/data/prometheus"
+      owner: "65534"
+    # UID 472 - domyślny użytkownik obrazu grafana/grafana
+    - path: "{{ monitoring_dir | default('/opt/monitoring') }}/data/grafana"
+      owner: "472"
+
+- name: Wygeneruj pliki konfiguracyjne Prometheusa i Grafany z szablonów Jinja2
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "{{ monitoring_dir | default('/opt/monitoring') }}/config/{{ item }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+  loop:
+    - prometheus/prometheus.yml
+    - grafana/provisioning/datasources/datasource.yml
+    - grafana/provisioning/dashboards/dashboard.yml
+    - grafana/dashboards/node-exporter.json
+    - grafana/dashboards/cadvisor.json
+  notify: Restart monitoring
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ monitoring_dir | default('/opt/monitoring') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+
+- name: Uruchom stos Docker Compose z monitoringiem
+  community.docker.docker_compose_v2:
+    project_src: "{{ monitoring_dir | default('/opt/monitoring') }}"
+    state: present

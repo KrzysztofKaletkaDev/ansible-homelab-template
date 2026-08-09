@@ -44,6 +44,7 @@ SHELL
     ansible.extra_vars = {
       ansible_user: "vagrant",
       vault_cloudflare_api_token: "TEST-DUMMY-TOKEN-NIE-PRAWDZIWY",
+      vault_grafana_admin_password: "test-dummy-password",
       custom_dns_target_ip: "192.168.56.10"
     }
   end

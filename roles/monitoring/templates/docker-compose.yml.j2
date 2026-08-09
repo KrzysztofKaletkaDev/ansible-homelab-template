@@ -1,0 +1,63 @@
+services:
+  prometheus:
+    image: prom/prometheus:{{ prometheus_version | default('v2.55.1') }}
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - {{ monitoring_dir | default('/opt/monitoring') }}/config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - {{ monitoring_dir | default('/opt/monitoring') }}/data/prometheus:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+
+  node-exporter:
+    image: prom/node-exporter:{{ node_exporter_version | default('v1.8.2') }}
+    container_name: node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:{{ cadvisor_version | default('v0.60.5') }}
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+
+  grafana:
+    image: grafana/grafana:{{ grafana_version | default('11.2.0') }}
+    container_name: grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD={{ vault_grafana_admin_password }}
+      - GF_SERVER_ROOT_URL=https://grafana.{{ domain_name }}
+      - TZ={{ timezone | default('Europe/Warsaw') }}
+    volumes:
+      - {{ monitoring_dir | default('/opt/monitoring') }}/data/grafana:/var/lib/grafana
+      - {{ monitoring_dir | default('/opt/monitoring') }}/config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - {{ monitoring_dir | default('/opt/monitoring') }}/config/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - default
+      - caddy-ingress
+    depends_on:
+      - prometheus
+
+networks:
+  default: {}
+  caddy-ingress:
+    external: true
