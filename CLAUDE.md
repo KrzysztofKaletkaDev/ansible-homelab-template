@@ -3,9 +3,10 @@
 ## Co to za projekt
 Ansible IaC dla jednowęzłowego homelabu na AlmaLinux 9: DNS z ad-blockingiem
 (Blocky), reverse proxy z auto-TLS przez Cloudflare DNS-01 (Caddy, budowany
-custom obrazem xcaddy), self-hosted menedżer haseł (Vaultwarden) i dashboard
-usług (Homepage) — wszystko na Dockerze, spięte wspólną siecią `caddy-ingress`.
-Docelowo jeden host (`core_nodes`).
+custom obrazem xcaddy), self-hosted menedżer haseł (Vaultwarden), dashboard
+usług (Homepage) i stos monitoringu (Prometheus, node_exporter, cAdvisor,
+Grafana z dashboardami provisionowanymi jako kod) — wszystko na Dockerze,
+spięte wspólną siecią `caddy-ingress`. Docelowo jeden host (`core_nodes`).
 
 ## Twarde zasady
 
@@ -27,19 +28,50 @@ Docelowo jeden host (`core_nodes`).
 
 - `site.yml` — główny playbook, kolejność ról ma znaczenie: `docker` musi
   iść przed resztą (wszystkie zależą od zainstalowanego Dockera), a `caddy`
-  musi iść przed `vaultwarden` i `homepage` — to caddy tworzy sieć Docker
-  `caddy-ingress` (`driver: bridge`), do której `vaultwarden`/`homepage`
-  dołączają się jako `external: true`. Zmiana tej kolejności wywali wdrożenie.
+  musi iść przed `monitoring`, `vaultwarden` i `homepage` — to caddy tworzy
+  sieć Docker `caddy-ingress` (`driver: bridge`), do której `monitoring`
+  (kontener Grafany), `vaultwarden` i `homepage` dołączają się jako
+  `external: true`. Rola `monitoring` idzie zaraz po `caddy`, przed
+  `vaultwarden`/`homepage` — trzymaj tę kolejność, zmiana wywali wdrożenie.
 - `roles/*/tasks/main.yml` — logika; `roles/*/templates/*.j2` — konfiguracja
   generowana Jinja2; `roles/*/handlers/main.yml` — restart/reload po zmianie.
 - Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń,
-  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`) żyją
-  w `group_vars/all/vars.yml` (nieobecny w repo, tylko `.example`).
-  Sekrety — w `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
+  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`, `monitoring_dir`,
+  `prometheus_version`, `node_exporter_version`, `cadvisor_version`,
+  `grafana_version`) żyją w `group_vars/all/vars.yml` (nieobecny w repo,
+  tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
+  (zaszyfrowany Ansible Vault).
 - Testy Molecule (`roles/*/molecule/default/`) NIE są jeszcze skonfigurowane
   dla żadnej roli — jedyna realna weryfikacja przed produkcją to
   `vagrant up`/`vagrant provision` (patrz `Vagrantfile`). Molecule pozostaje
   zalecanym, ale niewdrożonym sposobem testowania — nie zakładaj, że istnieje.
+
+## Pułapki tego repo
+
+- **`vars.yml` vs `vars.yml.example` się rozjeżdżają.** Aktualizacja
+  `group_vars/all/vars.yml.example` NIE propaguje się do realnego,
+  ignorowanego przez git `group_vars/all/vars.yml` na kontrolerze. Jawnie
+  wpisana tam stara wartość przykrywa nowy `| default(...)` w szablonie.
+  Przy każdej zmianie domyślnej wersji obrazu sprawdź też realny plik na
+  kontrolerze, nie tylko `.example`. To realnie zablokowało wdrożenie —
+  próba pobrania nieistniejącego `ghcr.io/google/cadvisor:v0.49.1`.
+- **cAdvisor: wersja i rejestr są przypięte celowo, nie "porządkuj" ich.**
+  `cadvisor_version` domyślnie `v0.60.5`, obraz z `ghcr.io/google/cadvisor`
+  (nie `gcr.io`). Docker na hoście używa containerd snapshottera, a
+  cAdvisor sprzed `v0.54.0` nie obsługuje tego układu przechowywania warstw
+  (upstream issue #3643, fix w PR #3709). Rejestr zmienił się z `gcr.io` na
+  `ghcr.io` przy `v0.53.0`. Nie cofaj wersji ani rejestru bez sprawdzenia
+  tych numerów.
+- **node_exporter bez `network_mode: host` kłamie o sieci.** Raportuje
+  interfejsy własnego namespace'u kontenera, nie hosta — potwierdzone
+  empirycznie porównaniem z `/proc/net/dev` na hoście. Montowanie `/proc`
+  z `--path.procfs` tego NIE naprawia, bo `/proc/net` jest per-namespace,
+  nie per-mount. Dlatego panel sieciowy hosta został usunięty z dashboardu
+  Grafany (`node-exporter.json`). Metryki CPU/RAM/dysk pozostają dokładne.
+- **Przebudowa obrazu Caddy pod tym samym tagiem osieroca kontener.** Stary
+  kontener wciąż wskazuje na osierocony sha, więc `docker compose` wywala
+  się przy `images`/`up` błędem `No such image`. Naprawa:
+  `docker compose down && docker compose up -d` w `/opt/caddy`.
 
 ## Konwencje kodu
 
