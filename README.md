@@ -50,6 +50,24 @@ graph TD
 
 ---
 
+## 📊 Monitoring & Observability
+
+Metrics are collected by Prometheus and visualised in Grafana, with all dashboards provisioned as code (`allowUiUpdates: false` — the JSON definitions in this repo are the single source of truth).
+
+### Host metrics (node_exporter)
+
+![Grafana node_exporter dashboard showing CPU, memory, filesystem and load](docs/images/grafana-node-exporter-dashboard.png)
+
+### Per-container metrics (cAdvisor)
+
+![Grafana cAdvisor dashboard showing CPU, memory and network per container](docs/images/grafana-cadvisor-dashboard.png)
+
+### Service dashboard (Homepage)
+
+![Homepage dashboard with service status indicators](docs/images/homepage-dashboard.png)
+
+---
+
 ## 📂 Repository Layout
 
 ```text
@@ -67,6 +85,8 @@ graph TD
 ├── requirements-dev.txt        # Python dev dependencies (ansible-lint, yamllint, ...)
 ├── collections/
 │   └── requirements.yml        # Required Ansible Galaxy collections
+├── docs/
+│   └── images/                 # Screenshots referenced from this README
 ├── inventory/
 │   └── hosts.yml.example       # Node topology & IP mapping template
 ├── group_vars/
