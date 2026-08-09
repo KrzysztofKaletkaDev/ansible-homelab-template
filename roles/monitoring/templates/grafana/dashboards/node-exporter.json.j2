@@ -65,29 +65,11 @@
       ]
     },
     {
-      "id": 5,
-      "title": "Network Traffic",
-      "type": "timeseries",
-      "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
-      "fieldConfig": { "defaults": { "unit": "Bps" }, "overrides": [] },
-      "targets": [
-        {
-          "expr": "rate(node_network_receive_bytes_total{device!~\"lo\"}[5m])",
-          "legendFormat": "rx {{ '{{' }} device {{ '}}' }}"
-        },
-        {
-          "expr": "rate(node_network_transmit_bytes_total{device!~\"lo\"}[5m])",
-          "legendFormat": "tx {{ '{{' }} device {{ '}}' }}"
-        }
-      ]
-    },
-    {
       "id": 6,
       "title": "Root Filesystem Free Space",
       "type": "timeseries",
       "datasource": "Prometheus",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] },
       "targets": [
         {
