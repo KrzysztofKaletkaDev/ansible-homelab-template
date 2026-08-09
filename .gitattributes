@@ -1,0 +1,5 @@
+# Templates are generated config, not the primary source of this project
+*.j2 linguist-vendored
+
+# Dashboards are data, not hand-written source
+roles/monitoring/templates/grafana/dashboards/*.json linguist-generated
