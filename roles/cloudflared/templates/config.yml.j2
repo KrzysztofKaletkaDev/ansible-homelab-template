@@ -3,5 +3,7 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   - hostname: {{ domain_name }}
-    service: http://caddy:80
+    service: https://caddy:443
+    originRequest:
+      originServerName: {{ domain_name }}
   - service: http_status:404
