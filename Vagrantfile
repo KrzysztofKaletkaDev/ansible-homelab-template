@@ -46,6 +46,8 @@ SHELL
       vault_cloudflare_api_token: "TEST-DUMMY-TOKEN-NIE-PRAWDZIWY",
       vault_grafana_admin_password: "test-dummy-password",
       custom_dns_target_ip: "192.168.56.10"
+      vault_cloudflared_tunnel_id: "00000000-0000-0000-0000-000000000000",
+      vault_cloudflared_credentials_json: "{\"AccountTag\":\"TEST-DUMMY-NIE-PRAWDZIWY\",\"TunnelSecret\":\"VEVTVC1EVU1NWS1TRUNSRVQ=\",\"TunnelID\":\"00000000-0000-0000-0000-000000000000\",\"Endpoint\":\"\"}"
     }
   end
 end
