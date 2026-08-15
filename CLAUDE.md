@@ -5,10 +5,12 @@ Ansible IaC dla jednowęzłowego homelabu na AlmaLinux 9: DNS z ad-blockingiem
 (Blocky), reverse proxy z auto-TLS przez Cloudflare DNS-01 (Caddy, budowany
 custom obrazem xcaddy), self-hosted menedżer haseł (Vaultwarden), dashboard
 usług (Homepage), statyczna strona wizytówkowa (kaletkadev.com, serwowana
-bezpośrednio przez file_server Caddy) i stos monitoringu (Prometheus,
+bezpośrednio przez file_server Caddy), stos monitoringu (Prometheus,
 node_exporter, cAdvisor, Grafana z dashboardami provisionowanymi jako kod)
-— wszystko na Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo
-jeden host (`core_nodes`).
+i zero-trust ingress bez otwartych portów przez Cloudflare Tunnel
+(`cloudflared`, locally-managed, `config.yml` jako kod) — wszystko na
+Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
+(`core_nodes`).
 
 ## Twarde zasady
 
@@ -38,15 +40,20 @@ jeden host (`core_nodes`).
   `portfolio` idzie PRZED `caddy` — z innego powodu niż siatka
   `caddy-ingress`: to rola `caddy` montuje `{{ portfolio_dir }}/site` jako
   bind mount `:ro` do kontenera, więc katalog z treścią musi już istnieć
-  (i być sklonowany) zanim Compose spróbuje go zamontować.
+  (i być sklonowany) zanim Compose spróbuje go zamontować. `cloudflared`
+  idzie NA KOŃCU listy, po `homepage` — potrzebuje istniejącej sieci
+  `caddy-ingress` (dołącza się jako `external: true`, tak samo jak
+  `monitoring`/`vaultwarden`/`homepage`), a kolejność względem pozostałych
+  usług poza `caddy` nie ma znaczenia.
 - `roles/*/tasks/main.yml` — logika; `roles/*/templates/*.j2` — konfiguracja
   generowana Jinja2; `roles/*/handlers/main.yml` — restart/reload po zmianie.
 - Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń,
   `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`, `portfolio_dir`,
   `monitoring_dir`, `prometheus_version`, `node_exporter_version`,
-  `cadvisor_version`, `grafana_version`) żyją w `group_vars/all/vars.yml`
-  (nieobecny w repo, tylko `.example`). Sekrety — w
-  `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
+  `cadvisor_version`, `grafana_version`, `cloudflared_dir`,
+  `cloudflared_version`) żyją w `group_vars/all/vars.yml` (nieobecny w
+  repo, tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
+  (zaszyfrowany Ansible Vault).
 - Testy Molecule (`roles/*/molecule/default/`) NIE są jeszcze skonfigurowane
   dla żadnej roli — jedyna realna weryfikacja przed produkcją to
   `vagrant up`/`vagrant provision` (patrz `Vagrantfile`). Molecule pozostaje
@@ -78,6 +85,19 @@ jeden host (`core_nodes`).
   kontener wciąż wskazuje na osierocony sha, więc `docker compose` wywala
   się przy `images`/`up` błędem `No such image`. Naprawa:
   `docker compose down && docker compose up -d` w `/opt/caddy`.
+- **`cloudflared`: `localhost` w ingress wskazuje na kontener cloudflared,
+  nie na hosta.** `cloudflared` żyje we własnym kontenerze podpiętym do
+  sieci `caddy-ingress`, więc `service:` w `config.yml` MUSI wskazywać na
+  Caddy po nazwie kontenera (`http://caddy:80`), nigdy `localhost`/`127.0.0.1`
+  — to by wskazywało na sam kontener cloudflared, który niczego nie
+  serwuje. Ta sama pułapka co gdyby ktoś próbował `network_mode: host`
+  dla node_exportera, tylko w drugą stronę.
+- **Rola `cloudflared` wymaga jednorazowego ręcznego bootstrapu poza
+  Ansible.** Tunel po stronie Cloudflare (`cloudflared tunnel login` →
+  `tunnel create` → `tunnel route dns`) trzeba założyć ręcznie z CLI, zanim
+  playbook pierwszy raz uruchomi tę rolę — `vault_cloudflared_tunnel_id` i
+  `vault_cloudflared_credentials_json` w `group_vars/core_nodes/vault.yml`
+  to dane z tego kroku, rola ich nie generuje ani nie tworzy tunelu.
 
 ## Konwencje kodu
 

@@ -1,0 +1,47 @@
+---
+# ==============================================================================
+# ROLE: Cloudflared (roles/cloudflared/tasks/main.yml)
+# Deploys cloudflared as a locally-managed tunnel client, exposing the domain
+# to the Internet via Cloudflare's edge with no inbound ports opened on the
+# host. The tunnel itself (ID, DNS route, credentials file) must already
+# exist on the Cloudflare side — this role only deploys the runtime.
+# ==============================================================================
+
+- name: Stwórz katalog konfiguracyjny dla cloudflared
+  ansible.builtin.file:
+    path: "{{ cloudflared_dir | default('/opt/cloudflared') }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Zapisz plik poświadczeń tunelu Cloudflare
+  ansible.builtin.copy:
+    content: "{{ vault_cloudflared_credentials_json }}"
+    dest: "{{ cloudflared_dir | default('/opt/cloudflared') }}/credentials.json"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+  no_log: true
+
+- name: Wygeneruj plik config.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: config.yml.j2
+    dest: "{{ cloudflared_dir | default('/opt/cloudflared') }}/config.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+  notify: Restart cloudflared
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ cloudflared_dir | default('/opt/cloudflared') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Uruchom kontener cloudflared przez Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ cloudflared_dir | default('/opt/cloudflared') }}"
+    state: present

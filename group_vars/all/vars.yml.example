@@ -39,3 +39,7 @@ prometheus_version: "v2.55.1"
 node_exporter_version: "v1.8.2"
 cadvisor_version: "v0.60.5"
 grafana_version: "11.2.0"
+
+# Cloudflare Tunnel client directory (locally-managed tunnel, zero open ports)
+cloudflared_dir: "/opt/cloudflared"
+cloudflared_version: "2026.8.2"

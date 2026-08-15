@@ -16,6 +16,7 @@ graph TD
     Client -->|HTTPS :443 / HTTP :80| Caddy[Caddy Reverse Proxy]
 
     subgraph core_node ["Core Node (AlmaLinux 9 / Docker Engine)"]
+        CloudflareTunnel[Cloudflare Tunnel Client / cloudflared] -->|http://caddy:80 caddy-ingress network| Caddy
         Blocky -->|Custom DNS Rewrites| Caddy
         Caddy -->|HTTPS Reverse Proxy| OpenWRT[OpenWRT Gateway Router]
         Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
@@ -45,6 +46,7 @@ graph TD
 - **Self-Hosted Password Manager:** Vaultwarden (Bitwarden-compatible server) deployed behind Caddy, with no ports published directly — reachable only through the reverse proxy's internal Docker network.
 - **Unified Service Dashboard:** Homepage, auto-discovering running containers via the Docker socket (read-only) and surfacing host resource stats.
 - **Monitoring & Observability as Code:** Prometheus, Grafana, node_exporter and cAdvisor deployed behind Caddy. Grafana dashboards (datasources, providers, JSON panels) are provisioned entirely as code from Jinja2 templates with `allowUiUpdates: false` — not clicked together in the UI — and Prometheus collects host metrics, container metrics, and Blocky's own DNS metrics.
+- **Zero-Trust Ingress via Cloudflare Tunnel:** A locally-managed `cloudflared` tunnel (`config.yml` provisioned as code) exposes the domain to the Internet without opening a single inbound port on the host — no firewalld changes, outbound-only connection to Cloudflare's edge.
 - **Enterprise DevSecOps Practices:** Strict separation of environment logic, topology, and encrypted secrets using Ansible Vault. Sensitive data is sanitized from version control via `.gitignore` patterns.
 - **System Integration:** Automated configuration of system services (`systemd`), group privileges, and dynamic package repository resolution on Enterprise Linux.
 

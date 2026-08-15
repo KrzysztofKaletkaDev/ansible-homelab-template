@@ -1,0 +1,15 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:{{ cloudflared_version | default('2026.8.2') }}
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    volumes:
+      - {{ cloudflared_dir | default('/opt/cloudflared') }}/config.yml:/etc/cloudflared/config.yml:ro
+      - {{ cloudflared_dir | default('/opt/cloudflared') }}/credentials.json:/etc/cloudflared/credentials.json:ro
+    networks:
+      - caddy-ingress
+
+networks:
+  caddy-ingress:
+    external: true

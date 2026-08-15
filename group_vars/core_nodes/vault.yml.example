@@ -5,3 +5,14 @@
 
 vault_cloudflare_api_token: "YOUR_CLOUDFLARE_API_TOKEN_HERE"
 vault_grafana_admin_password: "CHANGE_ME_STRONG_PASSWORD"
+
+# Cloudflare Tunnel identity (locally-managed tunnel, roles/cloudflared).
+# The tunnel itself must be created manually before the first run of this role:
+#   cloudflared tunnel login
+#   cloudflared tunnel create <tunnel-name>
+#   cloudflared tunnel route dns <tunnel-name> <domain_name>
+# vault_cloudflared_tunnel_id is the UUID printed by `tunnel create`.
+# vault_cloudflared_credentials_json is the full contents of the generated
+# ~/.cloudflared/<tunnel-id>.json credentials file, pasted as a single value.
+vault_cloudflared_tunnel_id: "YOUR_CLOUDFLARE_TUNNEL_ID_HERE"
+vault_cloudflared_credentials_json: "YOUR_CLOUDFLARE_TUNNEL_CREDENTIALS_JSON_HERE"
