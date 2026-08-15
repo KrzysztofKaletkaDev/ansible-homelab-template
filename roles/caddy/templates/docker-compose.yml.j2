@@ -13,6 +13,7 @@ services:
       - {{ caddy_dir | default('/opt/caddy') }}/etc:/etc/caddy
       - {{ caddy_dir | default('/opt/caddy') }}/data:/data
       - {{ caddy_dir | default('/opt/caddy') }}/config:/config
+      - {{ portfolio_dir | default('/opt/portfolio') }}/site:/srv/portfolio:ro
     networks:
       - caddy-ingress
 

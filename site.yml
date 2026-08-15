@@ -6,6 +6,7 @@
   roles:
     - docker
     - blocky
+    - portfolio
     - caddy
     - monitoring
     - vaultwarden

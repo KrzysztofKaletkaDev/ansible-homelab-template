@@ -1,0 +1,18 @@
+---
+# ==============================================================================
+# ROLE: Portfolio (roles/portfolio/tasks/main.yml)
+# Clones the static portfolio site (kaletkadev-portfolio-site) onto the host so
+# Caddy can serve it directly via file_server. No container, no build step.
+# ==============================================================================
+
+- name: Zainstaluj pakiet git
+  ansible.builtin.dnf:
+    name: git
+    state: present
+
+- name: Sklonuj lub zaktualizuj repozytorium strony portfolio
+  ansible.builtin.git:
+    repo: "https://github.com/KrzysztofKaletkaDev/kaletkadev-portfolio-site.git"
+    dest: "{{ portfolio_dir | default('/opt/portfolio') }}/site"
+    version: main
+    force: true
