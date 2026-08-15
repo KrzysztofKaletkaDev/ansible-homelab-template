@@ -3,7 +3,7 @@ services:
     image: cloudflare/cloudflared:{{ cloudflared_version | default('2026.8.2') }}
     container_name: cloudflared
     restart: unless-stopped
-    command: tunnel --no-autoupdate run
+    command: tunnel --config /etc/cloudflared/config.yml run
     volumes:
       - {{ cloudflared_dir | default('/opt/cloudflared') }}/config.yml:/etc/cloudflared/config.yml:ro
       - {{ cloudflared_dir | default('/opt/cloudflared') }}/credentials.json:/etc/cloudflared/credentials.json:ro
