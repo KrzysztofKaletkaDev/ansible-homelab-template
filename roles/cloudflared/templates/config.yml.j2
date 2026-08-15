@@ -1,0 +1,7 @@
+tunnel: {{ vault_cloudflared_tunnel_id }}
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: {{ domain_name }}
+    service: http://caddy:80
+  - service: http_status:404
