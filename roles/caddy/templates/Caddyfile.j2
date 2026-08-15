@@ -17,6 +17,13 @@
 *.{{ domain_name }}, {{ domain_name }} {
     import cloudflare_tls
 
+    # Static portfolio site (kaletkadev-portfolio-site), served directly by Caddy
+    @root host {{ domain_name }}
+    handle @root {
+        root * /srv/portfolio
+        file_server
+    }
+
     # OpenWRT router
     @router host router.{{ domain_name }}
     handle @router {

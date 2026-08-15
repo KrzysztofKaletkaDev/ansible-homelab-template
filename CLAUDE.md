@@ -4,9 +4,11 @@
 Ansible IaC dla jednowęzłowego homelabu na AlmaLinux 9: DNS z ad-blockingiem
 (Blocky), reverse proxy z auto-TLS przez Cloudflare DNS-01 (Caddy, budowany
 custom obrazem xcaddy), self-hosted menedżer haseł (Vaultwarden), dashboard
-usług (Homepage) i stos monitoringu (Prometheus, node_exporter, cAdvisor,
-Grafana z dashboardami provisionowanymi jako kod) — wszystko na Dockerze,
-spięte wspólną siecią `caddy-ingress`. Docelowo jeden host (`core_nodes`).
+usług (Homepage), statyczna strona wizytówkowa (kaletkadev.com, serwowana
+bezpośrednio przez file_server Caddy) i stos monitoringu (Prometheus,
+node_exporter, cAdvisor, Grafana z dashboardami provisionowanymi jako kod)
+— wszystko na Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo
+jeden host (`core_nodes`).
 
 ## Twarde zasady
 
@@ -33,14 +35,18 @@ spięte wspólną siecią `caddy-ingress`. Docelowo jeden host (`core_nodes`).
   (kontener Grafany), `vaultwarden` i `homepage` dołączają się jako
   `external: true`. Rola `monitoring` idzie zaraz po `caddy`, przed
   `vaultwarden`/`homepage` — trzymaj tę kolejność, zmiana wywali wdrożenie.
+  `portfolio` idzie PRZED `caddy` — z innego powodu niż siatka
+  `caddy-ingress`: to rola `caddy` montuje `{{ portfolio_dir }}/site` jako
+  bind mount `:ro` do kontenera, więc katalog z treścią musi już istnieć
+  (i być sklonowany) zanim Compose spróbuje go zamontować.
 - `roles/*/tasks/main.yml` — logika; `roles/*/templates/*.j2` — konfiguracja
   generowana Jinja2; `roles/*/handlers/main.yml` — restart/reload po zmianie.
 - Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń,
-  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`, `monitoring_dir`,
-  `prometheus_version`, `node_exporter_version`, `cadvisor_version`,
-  `grafana_version`) żyją w `group_vars/all/vars.yml` (nieobecny w repo,
-  tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
-  (zaszyfrowany Ansible Vault).
+  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`, `portfolio_dir`,
+  `monitoring_dir`, `prometheus_version`, `node_exporter_version`,
+  `cadvisor_version`, `grafana_version`) żyją w `group_vars/all/vars.yml`
+  (nieobecny w repo, tylko `.example`). Sekrety — w
+  `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
 - Testy Molecule (`roles/*/molecule/default/`) NIE są jeszcze skonfigurowane
   dla żadnej roli — jedyna realna weryfikacja przed produkcją to
   `vagrant up`/`vagrant provision` (patrz `Vagrantfile`). Molecule pozostaje

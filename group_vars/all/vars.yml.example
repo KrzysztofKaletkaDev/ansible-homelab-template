@@ -30,6 +30,9 @@ vaultwarden_version: "latest"
 # Homepage configuration directory (dashboard with automatic container discovery)
 homepage_dir: "/opt/homepage"
 
+# Portfolio site directory (static kaletkadev-portfolio-site checkout, served by Caddy)
+portfolio_dir: "/opt/portfolio"
+
 # Monitoring stack directory (Prometheus, node_exporter, cAdvisor, Grafana)
 monitoring_dir: "/opt/monitoring"
 prometheus_version: "v2.55.1"
