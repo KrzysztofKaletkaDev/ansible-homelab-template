@@ -16,7 +16,7 @@ graph TD
     Client -->|HTTPS :443 / HTTP :80| Caddy[Caddy Reverse Proxy]
 
     subgraph core_node ["Core Node (AlmaLinux 9 / Docker Engine)"]
-        CloudflareTunnel[Cloudflare Tunnel Client / cloudflared] -->|http://caddy:80 caddy-ingress network| Caddy
+        CloudflareTunnel[Cloudflare Tunnel Client / cloudflared] -->|http://caddy:443 caddy-ingress network| Caddy
         Blocky -->|Custom DNS Rewrites| Caddy
         Caddy -->|HTTPS Reverse Proxy| OpenWRT[OpenWRT Gateway Router]
         Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
