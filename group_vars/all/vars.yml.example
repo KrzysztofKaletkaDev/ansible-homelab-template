@@ -25,13 +25,18 @@ caddy_image_tag: "{{ caddy_version }}-cloudflare"
 # If you are migrating an existing instance, place the old data/ folder under
 # {{ vaultwarden_dir }}/data before or right after the first playbook run.
 vaultwarden_dir: "/opt/vaultwarden"
-vaultwarden_version: "latest"
+vaultwarden_version: "1.37.1"
 
 # Homepage configuration directory (dashboard with automatic container discovery)
 homepage_dir: "/opt/homepage"
+homepage_version: "v1.13.2"
 
 # Portfolio site directory (static kaletkadev-portfolio-site checkout, served by Caddy)
 portfolio_dir: "/opt/portfolio"
+portfolio_repo_url: "https://github.com/KrzysztofKaletkaDev/kaletkadev-portfolio-site.git"
+
+# Blocky DNS ad-blocker image version
+blocky_version: "v0.31.0"
 
 # Monitoring stack directory (Prometheus, node_exporter, cAdvisor, Grafana)
 monitoring_dir: "/opt/monitoring"

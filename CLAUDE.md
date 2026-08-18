@@ -48,12 +48,13 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
 - `roles/*/tasks/main.yml` — logika; `roles/*/templates/*.j2` — konfiguracja
   generowana Jinja2; `roles/*/handlers/main.yml` — restart/reload po zmianie.
 - Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń,
-  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`, `portfolio_dir`,
-  `monitoring_dir`, `prometheus_version`, `node_exporter_version`,
-  `cadvisor_version`, `grafana_version`, `cloudflared_dir`,
-  `cloudflared_version`) żyją w `group_vars/all/vars.yml` (nieobecny w
-  repo, tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
-  (zaszyfrowany Ansible Vault).
+  `vaultwarden_dir`, `vaultwarden_version`, `homepage_dir`,
+  `homepage_version`, `portfolio_dir`, `portfolio_repo_url`,
+  `blocky_version`, `monitoring_dir`, `prometheus_version`,
+  `node_exporter_version`, `cadvisor_version`, `grafana_version`,
+  `cloudflared_dir`, `cloudflared_version`) żyją w `group_vars/all/vars.yml`
+  (nieobecny w repo, tylko `.example`). Sekrety — w
+  `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
 - Testy Molecule (`roles/*/molecule/default/`) NIE są jeszcze skonfigurowane
   dla żadnej roli — jedyna realna weryfikacja przed produkcją to
   `vagrant up`/`vagrant provision` (patrz `Vagrantfile`). Molecule pozostaje

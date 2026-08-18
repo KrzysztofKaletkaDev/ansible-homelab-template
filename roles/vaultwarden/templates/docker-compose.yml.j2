@@ -1,6 +1,6 @@
 services:
   vaultwarden:
-    image: vaultwarden/server:{{ vaultwarden_version | default('latest') }}
+    image: vaultwarden/server:{{ vaultwarden_version | default('1.37.1') }}
     container_name: vaultwarden
     restart: unless-stopped
     environment:
