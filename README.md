@@ -16,7 +16,7 @@ graph TD
     Client -->|HTTPS :443 / HTTP :80| Caddy[Caddy Reverse Proxy]
 
     subgraph core_node ["Core Node (AlmaLinux 9 / Docker Engine)"]
-        CloudflareTunnel[Cloudflare Tunnel Client / cloudflared] -->|http://caddy:443 caddy-ingress network| Caddy
+        CloudflareTunnel[Cloudflare Tunnel Client / cloudflared] -->|https://caddy:443 SNI via originServerName, caddy-ingress network| Caddy
         Blocky -->|Custom DNS Rewrites| Caddy
         Caddy -->|HTTPS Reverse Proxy| OpenWRT[OpenWRT Gateway Router]
         Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
@@ -39,7 +39,7 @@ graph TD
 
 ## 🚀 Key Features & Architectural Design
 
-- **Infrastructure as Code (IaC):** Idempotent Ansible playbooks with modular, custom-crafted roles (`docker`, `blocky`, `caddy`, `monitoring`, `vaultwarden`, `homepage`).
+- **Infrastructure as Code (IaC):** Idempotent Ansible playbooks with modular, custom-crafted roles (`docker`, `blocky`, `portfolio`, `caddy`, `monitoring`, `vaultwarden`, `homepage`, `cloudflared`).
 - **Multi-Stage Container Compilation:** Custom-built Caddy Docker image using `xcaddy` to embed the Cloudflare DNS module for automated wildcard SSL certificate issuance (`*.domain.com`).
 - **Automated ACME DNS-01 Challenge:** Automated SSL/TLS issuance without exposing HTTP ports to the public Internet.
 - **Ad-Blocking & Privacy DNS:** Containerized Blocky DNS resolver with local DNS rewrites (`customDNS`) and external blocklists.
@@ -88,7 +88,8 @@ Metrics are collected by Prometheus and visualised in Grafana, with all dashboar
 ├── collections/
 │   └── requirements.yml        # Required Ansible Galaxy collections
 ├── docs/
-│   └── images/                 # Screenshots referenced from this README
+│   ├── images/                 # Screenshots referenced from this README
+│   └── adr/                    # Architecture Decision Records (MADR-lite)
 ├── inventory/
 │   └── hosts.yml.example       # Node topology & IP mapping template
 ├── group_vars/
@@ -99,10 +100,12 @@ Metrics are collected by Prometheus and visualised in Grafana, with all dashboar
 └── roles/
     ├── docker/                 # Official Docker CE Engine & Compose Plugin installation
     ├── blocky/                 # Blocky DNS Resolver container deployment & configuration
+    ├── portfolio/              # Clones the static kaletkadev.com site for Caddy's file_server
     ├── caddy/                  # Custom Caddy Reverse Proxy deployment & xcaddy build
     ├── monitoring/              # Prometheus, node_exporter, cAdvisor & Grafana (dashboards as code)
     ├── vaultwarden/            # Vaultwarden (Bitwarden-compatible) password manager deployment
-    └── homepage/               # Homepage service dashboard deployment & configuration
+    ├── homepage/               # Homepage service dashboard deployment & configuration
+    └── cloudflared/            # Zero-trust ingress via a locally-managed Cloudflare Tunnel
 ```
 
 ---
@@ -137,7 +140,19 @@ cp group_vars/core_nodes/vault.yml.example group_vars/core_nodes/vault.yml
 ansible-vault encrypt group_vars/core_nodes/vault.yml
 ```
 
-### 3. Deploy
+### 3. One-time Cloudflare Tunnel bootstrap
+
+The `cloudflared` role deploys a **locally-managed** tunnel — it provisions the runtime and `config.yml` as code, but it does not create the tunnel itself. Before the first `site.yml` run, authenticate and create the tunnel manually from the `cloudflared` CLI on your workstation:
+
+```bash
+cloudflared tunnel login
+cloudflared tunnel create <tunnel-name>
+cloudflared tunnel route dns <tunnel-name> <domain_name>
+```
+
+Take the tunnel ID and the generated credentials JSON from this step and put them into `group_vars/core_nodes/vault.yml` as `vault_cloudflared_tunnel_id` and `vault_cloudflared_credentials_json` before encrypting the file. Without this manual step, a fresh clone of this repository has nothing for the `cloudflared` role to point at and the playbook run for that role will fail.
+
+### 4. Deploy
 
 Apply the full infrastructure deployment:
 
@@ -145,7 +160,7 @@ Apply the full infrastructure deployment:
 ansible-playbook -i inventory/hosts.yml site.yml --ask-vault-pass
 ```
 
-### 4. Continuous Integration
+### 5. Continuous Integration
 
 Every push and pull request triggers the [Lint workflow](.github/workflows/lint.yml): `ansible-lint`, `yamllint`, and an `ansible-playbook --syntax-check` run against `site.yml` with the example inventory/vars templates copied into place. This catches malformed roles and broken syntax before a change ever reaches a Vagrant VM or production host.
 
@@ -155,7 +170,7 @@ Every push and pull request triggers the [Lint workflow](.github/workflows/lint.
 
 - **Zero Secret Leakage:** `.gitignore` enforces strictly parameterized `.example` templates while excluding production variables and state files.
 - **Least Privilege Enforcement:** Service configuration files generated on target nodes strictly enforce system permissions (`0644` for files, `0755` for directories, `0600` for any generated file embedding a Vault secret — e.g. Caddy's `docker-compose.yml` with the Cloudflare API token, and the monitoring stack's `docker-compose.yml` with the Grafana admin password).
-- **No Unnecessary Host Exposure:** None of the monitoring containers (Prometheus, node_exporter, cAdvisor, Grafana) publish ports directly to the host — Grafana is reachable exclusively through Caddy over the internal `caddy-ingress` Docker network, the same isolation model used for Vaultwarden.
+- **Minimized Host Exposure:** None of the monitoring containers (Prometheus, node_exporter, cAdvisor, Grafana) publish ports directly to the host — Grafana is reachable exclusively through Caddy over the internal `caddy-ingress` Docker network, the same isolation model used for Vaultwarden. Blocky is the exception: it must answer DNS on the host's network, so the `blocky` role publishes `53/tcp`, `53/udp`, and its Prometheus metrics endpoint `4000/tcp`, opening all three in `firewalld` for the local network. This is accepted as a homelab-scoped trade-off, not hidden — a stricter setup would scope those firewalld rules to a rich rule restricted to the LAN source subnet instead of the whole zone.
 - **Encrypted State:** All API tokens and credentials stored within the repository structure are encrypted using AES-256 via Ansible Vault.
 
 ---
