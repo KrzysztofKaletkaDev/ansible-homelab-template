@@ -12,7 +12,7 @@
 
 - name: Sklonuj lub zaktualizuj repozytorium strony portfolio
   ansible.builtin.git:
-    repo: "https://github.com/KrzysztofKaletkaDev/kaletkadev-portfolio-site.git"
+    repo: "{{ portfolio_repo_url | default('https://github.com/KrzysztofKaletkaDev/kaletkadev-portfolio-site.git') }}"
     dest: "{{ portfolio_dir | default('/opt/portfolio') }}/site"
     version: main
     force: true
