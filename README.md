@@ -101,6 +101,7 @@ Metrics are collected by Prometheus and visualised in Grafana, with all dashboar
     ├── docker/                 # Official Docker CE Engine & Compose Plugin installation
     ├── blocky/                 # Blocky DNS Resolver container deployment & configuration
     ├── portfolio/              # Clones the static kaletkadev.com site for Caddy's file_server
+    │   └── molecule/            # Molecule test scenario for this role
     ├── caddy/                  # Custom Caddy Reverse Proxy deployment & xcaddy build
     ├── monitoring/              # Prometheus, node_exporter, cAdvisor & Grafana (dashboards as code)
     ├── vaultwarden/            # Vaultwarden (Bitwarden-compatible) password manager deployment
@@ -163,6 +164,8 @@ ansible-playbook -i inventory/hosts.yml site.yml --ask-vault-pass
 ### 5. Continuous Integration
 
 Every push and pull request triggers the [Lint workflow](.github/workflows/lint.yml): `ansible-lint`, `yamllint`, and an `ansible-playbook --syntax-check` run against `site.yml` with the example inventory/vars templates copied into place. This catches malformed roles and broken syntax before a change ever reaches a Vagrant VM or production host.
+
+The same workflow also runs a `molecule test` scenario for the `portfolio` role — it's the only role that can be verified in a plain container: it doesn't depend on `community.docker.docker_compose_v2` (which needs a Docker daemon inside the test container) or on firewalld/D-Bus like the roles that manage the host firewall.
 
 ---
 

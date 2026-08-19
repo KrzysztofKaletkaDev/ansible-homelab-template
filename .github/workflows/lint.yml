@@ -56,3 +56,25 @@ jobs:
 
       - name: Sprawdź składnię site.yml
         run: ansible-playbook --syntax-check site.yml
+
+  molecule:
+    name: molecule (rola portfolio)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repozytorium
+        uses: actions/checkout@v4
+
+      - name: Ustaw Pythona
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Zainstaluj zależności deweloperskie
+        run: pip install -r requirements-dev.txt
+
+      - name: Zainstaluj kolekcje Ansible
+        run: ansible-galaxy collection install -r collections/requirements.yml
+
+      - name: Uruchom testy Molecule
+        run: molecule test
+        working-directory: roles/portfolio
