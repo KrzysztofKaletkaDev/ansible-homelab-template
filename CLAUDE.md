@@ -55,10 +55,17 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   `cloudflared_dir`, `cloudflared_version`) żyją w `group_vars/all/vars.yml`
   (nieobecny w repo, tylko `.example`). Sekrety — w
   `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
-- Testy Molecule (`roles/*/molecule/default/`) NIE są jeszcze skonfigurowane
-  dla żadnej roli — jedyna realna weryfikacja przed produkcją to
-  `vagrant up`/`vagrant provision` (patrz `Vagrantfile`). Molecule pozostaje
-  zalecanym, ale niewdrożonym sposobem testowania — nie zakładaj, że istnieje.
+- Rola `portfolio` ma scenariusz Molecule
+  (`roles/portfolio/molecule/default/`: create/converge/idempotence/verify/
+  destroy), uruchamiany lokalnie przez `cd roles/portfolio && molecule test`
+  oraz automatycznie w CI (job `molecule` w `.github/workflows/lint.yml`).
+  Pozostałych siedem ról NIE jest pokrytych Molecule — wymagałoby to
+  docker-in-docker (`community.docker.docker_compose_v2` potrzebuje demona
+  Dockera wewnątrz kontenera testowego) albo obrazu z działającym systemd
+  i D-Bus (dla firewalld w rolach `docker`, `blocky`, `caddy`). Dla tych ról
+  jedyna realna weryfikacja przed produkcją to nadal `vagrant up`/
+  `vagrant provision` (patrz `Vagrantfile`). Nie zakładaj, że pokrycie
+  Molecule jest szersze niż opisane tutaj.
 
 ## Pułapki tego repo
 
@@ -99,6 +106,14 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   playbook pierwszy raz uruchomi tę rolę — `vault_cloudflared_tunnel_id` i
   `vault_cloudflared_credentials_json` w `group_vars/core_nodes/vault.yml`
   to dane z tego kroku, rola ich nie generuje ani nie tworzy tunelu.
+- **Molecule dla roli leżącej w `roles/` obok innych ról nie znajdzie jej
+  bez jawnego `ANSIBLE_ROLES_PATH`.** Domyślna ścieżka przeszukiwania ról
+  Ansible nie obejmuje katalogu nadrzędnego scenariusza testowego, więc
+  `include_role: name: portfolio` w `converge.yml` wywala się błędem
+  "role not found", mimo że rola fizycznie istnieje obok. Naprawa: w
+  `provisioner.env` w `molecule.yml` ustawić
+  `ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..` (patrz
+  `roles/portfolio/molecule/default/molecule.yml`).
 
 ## Konwencje kodu
 

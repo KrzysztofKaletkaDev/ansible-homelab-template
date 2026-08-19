@@ -1,0 +1,39 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Pobierz informacje o katalogu ze stroną
+      ansible.builtin.stat:
+        path: /opt/portfolio/site
+      register: portfolio_site_dir
+
+    - name: Pobierz informacje o pliku index.html
+      ansible.builtin.stat:
+        path: /opt/portfolio/site/index.html
+      register: portfolio_index_file
+
+    - name: Pobierz informacje o katalogu .git
+      ansible.builtin.stat:
+        path: /opt/portfolio/site/.git
+      register: portfolio_git_dir
+
+    - name: Sprawdź aktualnie wypisaną gałąź repozytorium
+      ansible.builtin.command:
+        cmd: git rev-parse --abbrev-ref HEAD
+        chdir: /opt/portfolio/site
+      register: portfolio_site_branch
+      changed_when: false
+
+    - name: Zweryfikuj stan sklonowanej strony portfolio
+      ansible.builtin.assert:
+        that:
+          - portfolio_site_dir.stat.exists
+          - portfolio_site_dir.stat.isdir
+          - portfolio_git_dir.stat.exists
+          - portfolio_index_file.stat.exists
+          - portfolio_index_file.stat.isreg
+          - portfolio_index_file.stat.size > 0
+          - portfolio_site_branch.stdout == 'main'
+        fail_msg: "Rola portfolio nie sklonowała poprawnie repozytorium strony"
+        success_msg: "Strona jest sklonowana, na gałęzi main, index.html obecny"
