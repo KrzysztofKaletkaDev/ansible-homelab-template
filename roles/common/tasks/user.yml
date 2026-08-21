@@ -1,0 +1,29 @@
+---
+- name: Stwórz użytkownika administracyjnego
+  ansible.builtin.user:
+    name: "{{ ansible_user }}"
+    groups: wheel
+    append: true
+    shell: /bin/bash
+    create_home: true
+
+- name: Dodaj klucze SSH użytkownika administracyjnego
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    key: "{{ item }}"
+  loop: "{{ common_authorized_keys }}"
+
+- name: Zainstaluj pakiet sudo
+  ansible.builtin.dnf:
+    name: sudo
+    state: present
+
+- name: Skonfiguruj sudo bez hasła dla grupy wheel
+  ansible.builtin.template:
+    src: wheel-nopasswd.j2
+    dest: /etc/sudoers.d/99-wheel-nopasswd
+    owner: root
+    group: root
+    mode: '0440'
+    validate: '/usr/sbin/visudo -cf %s'
+  when: common_sudo_nopasswd | bool

@@ -1,0 +1,17 @@
+---
+- name: Zainstaluj pakiety bazowe i narzędzia diagnostyczne
+  ansible.builtin.dnf:
+    name:
+      - vim-enhanced
+      - nano
+      - bash-completion
+      - curl
+      - wget
+      - tar
+      - policycoreutils-python-utils
+      - bind-utils
+      - mtr
+      - tcpdump
+      - lsof
+    state: present
+    allowerasing: true
