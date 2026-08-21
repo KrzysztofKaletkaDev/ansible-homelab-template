@@ -1,0 +1,31 @@
+---
+driver:
+  name: docker
+
+platforms:
+  - name: common-alma9
+    image: almalinux:9
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+  env:
+    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..
+  inventory:
+    host_vars:
+      common-alma9:
+        ansible_become: false
+        # root already exists in the base image and is the container's default
+        # user, so it can double as both the docker exec user (avoids a
+        # chicken-and-egg connection failure before the role creates anyone)
+        # and the "admin user" the role manages.
+        ansible_user: "root"
+        common_authorized_keys:
+          - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDummyKeyForMoleculeTestingOnly molecule@test"
+        common_sudo_nopasswd: true
+
+verifier:
+  name: ansible
