@@ -13,6 +13,21 @@
     }
 }
 
+# Security headers deliberately scoped to the static portfolio site only
+# (imported inside handle @root). A strict CSP applied site-wide would break
+# Grafana and Vaultwarden, which load their own inline/bundled scripts and
+# styles; the static site serves fixed assets and can take the tight policy.
+(portfolio_headers) {
+    header {
+        Strict-Transport-Security "max-age=300"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(), microphone=(), camera=()"
+        Content-Security-Policy-Report-Only "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    }
+}
+
 # UNIFIED BLOCK FOR THE DOMAIN AND ALL SUBDOMAINS
 *.{{ domain_name }}, {{ domain_name }} {
     import cloudflare_tls
@@ -20,8 +35,15 @@
     # Static portfolio site (kaletkadev-portfolio-site), served directly by Caddy
     @root host {{ domain_name }}
     handle @root {
+        import portfolio_headers
         root * /srv/portfolio
         file_server
+    }
+
+    # www -> apex: single canonical hostname
+    @www host www.{{ domain_name }}
+    handle @www {
+        redir https://{{ domain_name }}{uri} permanent
     }
 
     # OpenWRT router

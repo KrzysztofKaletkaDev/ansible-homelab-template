@@ -15,3 +15,5 @@ force in the code — not a proposal.
 | [0006](0006-remove-host-network-panel-node-exporter.md) | Removed the host network panel from the node_exporter dashboard | Accepted |
 | [0007](0007-blocky-lan-exposed-ports.md) | Blocky's DNS and metrics ports opened to the LAN | Accepted |
 | [0008](0008-grafana-dashboards-as-code.md) | Grafana dashboards provisioned as code with `allowUiUpdates: false` | Accepted |
+| [0009](0009-www-to-apex-redirect-in-caddy.md) | www-to-apex redirect in Caddy instead of a Cloudflare Redirect Rule | Accepted |
+| [0010](0010-security-headers-scoped-to-static-site.md) | Security headers scoped to the static site handler | Accepted |

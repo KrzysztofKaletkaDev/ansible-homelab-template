@@ -149,7 +149,10 @@ The `cloudflared` role deploys a **locally-managed** tunnel — it provisions th
 cloudflared tunnel login
 cloudflared tunnel create <tunnel-name>
 cloudflared tunnel route dns <tunnel-name> <domain_name>
+cloudflared tunnel route dns <tunnel-name> www.<domain_name>
 ```
+
+Both DNS records are required: the apex serves the static site and `www` is a permanent redirect to it. Without the second record, `www` has no route into the tunnel and returns an error on a fresh deployment.
 
 Take the tunnel ID and the generated credentials JSON from this step and put them into `group_vars/core_nodes/vault.yml` as `vault_cloudflared_tunnel_id` and `vault_cloudflared_credentials_json` before encrypting the file. Without this manual step, a fresh clone of this repository has nothing for the `cloudflared` role to point at and the playbook run for that role will fail.
 
