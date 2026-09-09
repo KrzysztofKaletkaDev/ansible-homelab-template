@@ -19,12 +19,20 @@
 # styles; the static site serves fixed assets and can take the tight policy.
 (portfolio_headers) {
     header {
-        Strict-Transport-Security "max-age=300"
+        Strict-Transport-Security "max-age=31536000"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "geolocation=(), microphone=(), camera=()"
-        Content-Security-Policy-Report-Only "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+        Content-Security-Policy "default-src 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+        # no-transform forbids Cloudflare's edge from rewriting the response
+        # body, which is how the Web Analytics beacon and Bot Fight Mode inject
+        # inline scripts that this CSP would otherwise block. Enforcing it in
+        # code, not relying on the dashboard toggles staying off.
+        # Deliberate cost: Cloudflare email address obfuscation stops working
+        # too, so the mailto: in index.html is visible in plain text in the
+        # page source.
+        Cache-Control "public, no-transform"
     }
 }
 
