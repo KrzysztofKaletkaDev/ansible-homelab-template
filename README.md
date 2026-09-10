@@ -18,11 +18,10 @@ graph TD
     subgraph core_node ["Core Node (AlmaLinux 9 / Docker Engine)"]
         CloudflareTunnel[Cloudflare Tunnel Client / cloudflared] -->|https://caddy:443 SNI via originServerName, caddy-ingress network| Caddy
         Blocky -->|Custom DNS Rewrites| Caddy
-        Caddy -->|HTTPS Reverse Proxy| OpenWRT[OpenWRT Gateway Router]
-        Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
+        Caddy -->|file_server /srv/portfolio| Portfolio[Static portfolio site]
         Caddy -->|Ingress Response| Homepage[Homepage Gateway]
         Caddy -->|Ingress Response| Vaultwarden[Vaultwarden Password Manager]
-        Caddy -->|HTTPS Reverse Proxy| Grafana[Grafana Dashboards]
+        Caddy -->|Ingress Response| Grafana[Grafana Dashboards]
 
         subgraph monitoring ["Monitoring Stack (compose network)"]
             Prometheus[Prometheus] -->|scrape| NodeExporter[node_exporter]
@@ -31,6 +30,9 @@ graph TD
         Grafana -->|query| Prometheus
         Prometheus -->|scrape :4000 on host| Blocky
     end
+
+    Caddy -->|HTTPS Reverse Proxy| Router[RB5009 Edge Router]
+    Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
 
     Cloudflare[Cloudflare DNS API] <-->|ACME DNS-01 Challenge| Caddy
 ```
