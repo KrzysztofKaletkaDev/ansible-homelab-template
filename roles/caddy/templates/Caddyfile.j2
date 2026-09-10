@@ -54,7 +54,7 @@
         redir https://{{ domain_name }}{uri} permanent
     }
 
-    # OpenWRT router
+    # RB5009 edge router
     @router host router.{{ domain_name }}
     handle @router {
         reverse_proxy https://{{ router_ip | default('10.0.0.1') }}:443 {
