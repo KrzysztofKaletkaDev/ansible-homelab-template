@@ -31,7 +31,6 @@ graph TD
         Prometheus -->|scrape :4000 on host| Blocky
     end
 
-    Caddy -->|HTTPS Reverse Proxy| Router[RB5009 Edge Router]
     Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
 
     Cloudflare[Cloudflare DNS API] <-->|ACME DNS-01 Challenge| Caddy
