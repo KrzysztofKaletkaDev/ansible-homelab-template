@@ -14,7 +14,6 @@ domain_name: "example.com"
 acme_email: "admin@example.com"
 
 # IP addresses of internal network devices (for the Caddy Reverse Proxy)
-router_ip: "10.0.0.1"
 qnap_ip: "10.0.0.2"
 
 # Caddy image version (must match the base tag in roles/caddy/templates/Dockerfile.j2)
