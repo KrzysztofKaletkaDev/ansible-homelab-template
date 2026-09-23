@@ -47,3 +47,39 @@ grafana_version: "11.2.0"
 # Cloudflare Tunnel client directory (locally-managed tunnel, zero open ports)
 cloudflared_dir: "/opt/cloudflared"
 cloudflared_version: "2026.8.2"
+
+# Live camera view (roles/go2rtc + roles/camera_wall), LAN only — see ADR-0011.
+# go2rtc restreams the cameras for viewing only; recording stays on the NAS.
+go2rtc_dir: "/opt/go2rtc"
+go2rtc_version: "1.9.14"
+
+# One list drives both go2rtc.yaml (with credentials) and the public
+# cameras.json (label, stream names, mode and fit only).
+#   id          - stream name: [a-z0-9_]; main stream "<id>", substream "<id>s"
+#   label       - caption on the tile
+#   host        - camera address; port defaults to 554 (override with "port")
+#   main_path   - optional; without it there is no main stream and fullscreen
+#                 shows the substream
+#   sub_path    - required; shown in the grid
+#   credentials - key into vault_go2rtc_credentials (omit for no auth)
+#   transcode   - true re-encodes the SUBSTREAM to H.264/AAC through ffmpeg
+#                 (for cameras that only send H.265); costs CPU while watched
+#   mode        - mse | webrtc (a fallback list like "mse,webrtc" also works)
+#   fit         - contain | fill | cover
+go2rtc_cameras:
+  - id: cam1
+    label: "Camera 1"
+    host: "10.0.0.101"
+    main_path: /stream1
+    sub_path: /stream2
+    credentials: cam1
+    mode: mse
+    fit: contain
+  - id: cam2
+    label: "Camera 2"
+    host: "10.0.0.102"
+    sub_path: /12
+    credentials: cam2
+    transcode: true
+    mode: webrtc
+    fit: contain

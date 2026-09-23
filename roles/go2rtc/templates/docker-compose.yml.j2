@@ -1,0 +1,25 @@
+services:
+  go2rtc:
+    image: alexxit/go2rtc:{{ go2rtc_version | default('1.9.14') }}
+    container_name: go2rtc
+    restart: unless-stopped
+    # Blocky (the DNS for the whole LAN) shares this 2 vCPU host; the cap keeps
+    # a runaway ffmpeg transcode from starving it
+    cpus: "1.0"
+    # WebRTC media only. The API (1984) and the built-in RTSP server (8554)
+    # are deliberately not published: Caddy reaches the API over caddy-ingress
+    ports:
+      - "8555:8555/udp"
+    environment:
+      - TZ={{ timezone | default('Europe/Warsaw') }}
+    volumes:
+      # Directory mount, not a single-file mount: the template module replaces
+      # the file with a new inode, which a file bind mount would never see.
+      # Read-only so config edits made through the go2rtc web UI cannot persist
+      - {{ go2rtc_dir | default('/opt/go2rtc') }}/config:/config:ro
+    networks:
+      - caddy-ingress
+
+networks:
+  caddy-ingress:
+    external: true

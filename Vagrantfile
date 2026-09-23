@@ -49,7 +49,20 @@ SHELL
       vault_grafana_admin_password: "test-dummy-password",
       custom_dns_target_ip: "192.168.56.10",
       vault_cloudflared_tunnel_id: "00000000-0000-0000-0000-000000000000",
-      vault_cloudflared_credentials_json: "{\"AccountTag\":\"TEST-DUMMY-NIE-PRAWDZIWY\",\"TunnelSecret\":\"VEVTVC1EVU1NWS1TRUNSRVQ=\",\"TunnelID\":\"00000000-0000-0000-0000-000000000000\",\"Endpoint\":\"\"}"
+      vault_cloudflared_credentials_json: "{\"AccountTag\":\"TEST-DUMMY-NIE-PRAWDZIWY\",\"TunnelSecret\":\"VEVTVC1EVU1NWS1TRUNSRVQ=\",\"TunnelID\":\"00000000-0000-0000-0000-000000000000\",\"Endpoint\":\"\"}",
+      # Unreachable TEST-NET cameras: the run checks structure, permissions and
+      # idempotence, not video. The passwords exercise percent-encoding of
+      # "%", "/", "@" and ":", and the empty user of a password-only account.
+      vault_go2rtc_credentials: {
+        "dummy" => { "user" => "test-dummy", "password" => "TEST%%dummy/NIE@PRAWDZIWE:1" },
+        "dummy_nouser" => { "user" => "", "password" => "TEST%%/dummy" }
+      },
+      go2rtc_cameras: [
+        { "id" => "test1", "label" => "Test 1", "host" => "192.0.2.101", "main_path" => "/stream1",
+          "sub_path" => "/stream2", "credentials" => "dummy", "mode" => "mse", "fit" => "contain" },
+        { "id" => "test2", "label" => "Test 2", "host" => "192.0.2.102", "sub_path" => "/12",
+          "credentials" => "dummy_nouser", "transcode" => true, "mode" => "webrtc", "fit" => "contain" }
+      ]
     }
   end
 end

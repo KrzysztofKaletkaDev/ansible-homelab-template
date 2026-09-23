@@ -1,0 +1,48 @@
+{#-
+  Builds an RTSP URL for a camera. Credentials are percent-encoded: a raw
+  "%", "@", ":" or "/" in a password breaks URL parsing ("invalid url
+  escape"). The urlencode filter leaves "/" as is, hence the extra replace.
+  An empty user still renders as rtsp://:PASSWORD@HOST.
+-#}
+{%- macro rtsp_url(cam, path) -%}
+{%- set userinfo = '' -%}
+{%- if cam.credentials is defined and cam.credentials -%}
+{%- set cred = vault_go2rtc_credentials[cam.credentials] -%}
+{%- set userinfo = (cred.user | default('') | string | urlencode | replace('/', '%2F'))
+    ~ ':' ~ (cred.password | default('') | string | urlencode | replace('/', '%2F')) ~ '@' -%}
+{%- endif -%}
+rtsp://{{ userinfo }}{{ cam.host }}:{{ cam.port | default(554) }}{{ path }}
+{%- endmacro -%}
+# Managed by Ansible (roles/go2rtc) — contains camera credentials, do not edit by hand
+
+api:
+  listen: ":1984"
+  # No "origin" on purpose: the page and the API share one hostname behind
+  # Caddy, and "*" would let any web page read /api/streams (with passwords)
+
+rtsp:
+  # Must stay enabled: ffmpeg publishes transcoded streams back into go2rtc
+  # through rtsp://127.0.0.1:8554. Not published on the host.
+  listen: ":8554"
+
+webrtc:
+  listen: ":8555"
+  candidates:
+    - {{ custom_dns_target_ip }}:8555
+
+log:
+  level: info
+
+streams:
+{% for cam in go2rtc_cameras | default([]) %}
+{% if cam.main_path | default('') %}
+  {{ cam.id }}: {{ rtsp_url(cam, cam.main_path) | to_json }}
+{% endif %}
+{# The transcode source must carry the RTSP URL itself: in 1.9.14 the
+   ffmpeg:<stream name>#video=h264 form never starts ffmpeg #}
+{% if cam.transcode | default(false) %}
+  {{ cam.id }}s: {{ ('ffmpeg:' ~ rtsp_url(cam, cam.sub_path) ~ '#video=h264#audio=aac') | to_json }}
+{% else %}
+  {{ cam.id }}s: {{ rtsp_url(cam, cam.sub_path) | to_json }}
+{% endif %}
+{% endfor %}
