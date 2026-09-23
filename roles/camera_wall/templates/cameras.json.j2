@@ -1,0 +1,16 @@
+{#-
+  Public file: every viewer of the page downloads it. Only stream names and
+  display options go here — never hosts, paths or credentials. No "go2rtc"
+  key either: the page resolves the API relative to its own URL.
+-#}
+{%- set cameras = [] -%}
+{%- for cam in go2rtc_cameras | default([]) -%}
+{%- set _ = cameras.append({
+    'label': cam.label,
+    'grid': cam.id ~ 's',
+    'full': cam.id if cam.main_path | default('') else cam.id ~ 's',
+    'mode': cam.mode | default('mse'),
+    'fit': cam.fit | default('contain'),
+}) -%}
+{%- endfor -%}
+{{ {'cameras': cameras} | to_nice_json(indent=2, sort_keys=false, ensure_ascii=false) }}

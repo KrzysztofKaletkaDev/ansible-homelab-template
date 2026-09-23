@@ -1,0 +1,37 @@
+---
+# ==============================================================================
+# ROLE: Camera wall (roles/camera_wall/tasks/main.yml)
+# Renders the static camera grid page that Caddy serves via file_server at
+# kamery.{{ domain_name }}. Must run BEFORE the caddy role: Caddy bind-mounts
+# {{ camera_wall_dir }}/site, and a missing bind-mount source would be silently
+# created by Docker as an empty root-owned directory. The player scripts
+# (video-stream.js, video-rtc.js) are not kept here — Caddy proxies them from
+# go2rtc so they always match the running go2rtc version.
+# ==============================================================================
+
+- name: Stwórz strukturę katalogów dla ściany kamer
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ camera_wall_dir | default('/opt/camera_wall') }}"
+    - "{{ camera_wall_dir | default('/opt/camera_wall') }}/site"
+
+- name: Skopiuj stronę ściany kamer (index.html)
+  ansible.builtin.copy:
+    src: index.html
+    dest: "{{ camera_wall_dir | default('/opt/camera_wall') }}/site/index.html"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Wygeneruj plik cameras.json z listy go2rtc_cameras
+  ansible.builtin.template:
+    src: cameras.json.j2
+    dest: "{{ camera_wall_dir | default('/opt/camera_wall') }}/site/cameras.json"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'

@@ -52,6 +52,7 @@ cloudflared_version: "2026.8.2"
 # go2rtc restreams the cameras for viewing only; recording stays on the NAS.
 go2rtc_dir: "/opt/go2rtc"
 go2rtc_version: "1.9.14"
+camera_wall_dir: "/opt/camera_wall"
 
 # One list drives both go2rtc.yaml (with credentials) and the public
 # cameras.json (label, stream names, mode and fit only).

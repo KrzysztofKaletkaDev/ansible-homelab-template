@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kamery</title>
+<style>
+  :root {
+    --bg: #14161b;
+    --bg-elevated: #1b1e25;
+    --border: #2a2e37;
+    --text: #eceef1;
+    --text-muted: #5c6270;
+    --accent: #f5a623;
+    --gap: 8px;
+    /* margines pod overscan telewizora */
+    --safe: 12px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    padding:
+      calc(var(--safe) + env(safe-area-inset-top, 0px))
+      calc(var(--safe) + env(safe-area-inset-right, 0px))
+      calc(var(--safe) + env(safe-area-inset-bottom, 0px))
+      calc(var(--safe) + env(safe-area-inset-left, 0px));
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: var(--safe);
+    flex: 0 0 auto;
+  }
+
+  h1 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .spacer { flex: 1; }
+
+  button {
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--text);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+
+  /* wyraźny fokus — bez tego nie da się nawigować pilotem */
+  :focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  #grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    gap: var(--gap);
+    grid-template-columns: repeat(var(--cols, 3), var(--tile, 1fr));
+    align-content: center;
+    justify-content: center;
+  }
+
+  .tile {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+
+  .tile video,
+  .tile video-stream video {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  /* Klik ma trafiać w kafelek, a nie w natywne sterowanie wideo —
+     inaczej przyciski odtwarzacza przechwytują kliknięcie i pełny ekran nie rusza. */
+  .tile video-stream {
+    display: block;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .tile video::-webkit-media-controls { display: none !important; }
+
+  .tile[data-fit="contain"] video { object-fit: contain; }
+  .tile[data-fit="fill"]    video { object-fit: fill; }
+  .tile[data-fit="cover"]   video { object-fit: cover; }
+
+  .label {
+    position: absolute;
+    left: 0; bottom: 0;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.55);
+    border-top-right-radius: 6px;
+    pointer-events: none;
+  }
+
+  .tile:fullscreen { border: 0; border-radius: 0; aspect-ratio: auto; }
+  #grid:fullscreen  { padding: var(--safe); background: var(--bg); }
+
+  #msg {
+    padding: 24px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  /* telefon: zamiast ściskać sześć kafelków, pozwól przewijać */
+  @media (max-width: 600px) {
+    html, body { overflow: auto; }
+    body { height: auto; min-height: 100%; }
+    #grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+      align-content: start;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Kamery</h1>
+  <span class="spacer"></span>
+  <button id="fs">Pełny ekran</button>
+</header>
+
+<div id="grid"></div>
+<div id="msg" hidden></div>
+
+<script type="module" src="video-stream.js"></script>
+<script>
+(async function () {
+  const grid = document.getElementById('grid');
+  const msg  = document.getElementById('msg');
+  let cams = [], base = '';
+
+  function fail(text) {
+    msg.hidden = false;
+    msg.textContent = text;
+  }
+
+  try {
+    const cfg = await (await fetch('cameras.json')).json();
+    base = new URL(cfg.go2rtc || './', location.href);
+    cams = cfg.cameras;
+  } catch (e) {
+    fail('Nie udało się wczytać cameras.json — serwuj stronę przez http.server, nie otwieraj pliku z dysku.');
+    return;
+  }
+
+  // Moduł odtwarzacza ładuje się asynchronicznie i potrafi skończyć PÓŹNIEJ niż
+  // cameras.json. Element <video-stream> utworzony przed definicją klasy dostaje
+  // src jako zwykłe pole, które potem zasłania setter komponentu — połączenie
+  // nigdy nie rusza. Dlatego najpierw czekamy na definicję.
+  try {
+    await Promise.race([
+      customElements.whenDefined('video-stream'),
+      new Promise((_, reject) => setTimeout(reject, 5000))
+    ]);
+  } catch (e) {
+    fail('Nie wczytał się odtwarzacz — sprawdź, czy video-stream.js i video-rtc.js leżą obok index.html.');
+    return;
+  }
+
+  // Podmienia strumień w kafelku: element tworzymy od nowa, bo to najpewniejszy
+  // sposób na przełączenie źródła w komponencie go2rtc.
+  function setStream(tile, name, mode) {
+    tile.querySelectorAll('video-stream').forEach(el => el.remove());
+    const el = document.createElement('video-stream');
+    el.mode = mode;
+    el.src = new URL('api/ws?src=' + encodeURIComponent(name), base);
+    tile.prepend(el);
+  }
+
+  cams.forEach(cam => {
+    const tile = document.createElement('button');
+    tile.className = 'tile';
+    tile.dataset.fit = cam.fit || 'contain';
+    tile.setAttribute('aria-label', cam.label);
+
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = cam.label;
+    tile.appendChild(label);
+
+    setStream(tile, cam.grid, cam.mode);
+
+    // Klik = pełny ekran tej kamery. Strumień podmienia się na główny
+    // dopiero w reakcji na zdarzenie fullscreenchange, poniżej.
+    tile.addEventListener('click', () => {
+      if (document.fullscreenElement === tile) document.exitFullscreen();
+      else tile.requestFullscreen().catch(() => {});
+    });
+
+    tile._cam = cam;
+    grid.appendChild(tile);
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    const fsEl = document.fullscreenElement;
+    grid.querySelectorAll('.tile').forEach(tile => {
+      const cam = tile._cam;
+      const want = (tile === fsEl) ? cam.full : cam.grid;
+      if (tile._current !== want) {
+        setStream(tile, want, cam.mode);
+        tile._current = want;
+      }
+    });
+    fit();
+  });
+
+  document.getElementById('fs').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else grid.requestFullscreen().catch(() => {});
+  });
+
+  // Dobiera liczbę kolumn tak, żeby kafelki 16:9 wyszły jak największe.
+  function fit() {
+    if (window.innerWidth <= 600) return;   // telefon ma własny układ w CSS
+    const gap = 8, n = cams.length;
+    const W = grid.clientWidth, H = grid.clientHeight;
+    if (!W || !H) return;
+    let best = { cols: 1, w: 0 };
+    for (let c = 1; c <= n; c++) {
+      const r = Math.ceil(n / c);
+      const w = Math.min(
+        (W - (c - 1) * gap) / c,
+        ((H - (r - 1) * gap) / r) * 16 / 9
+      );
+      if (w > best.w) best = { cols: c, w };
+    }
+    grid.style.setProperty('--cols', best.cols);
+    grid.style.setProperty('--tile', Math.floor(best.w) + 'px');
+  }
+
+  fit();
+  window.addEventListener('resize', fit);
+
+  // Nie pozwól wygasić ekranu, gdy strona wisi jako podgląd.
+  async function wake() {
+    try { await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  wake();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') wake();
+  });
+})();
+</script>
+</body>
+</html>
