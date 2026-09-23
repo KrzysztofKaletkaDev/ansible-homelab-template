@@ -43,7 +43,9 @@ SHELL
     # — we override this only for the test, so as not to touch the actual config
     ansible.extra_vars = {
       ansible_user: "vagrant",
-      vault_cloudflare_api_token: "TEST-DUMMY-TOKEN-NIE-PRAWDZIWY",
+      # caddy-dns/cloudflare v0.2.4 rejects malformed tokens at startup and Caddy
+      # crash-loops, so the dummy must look like a real one (40 chars of [A-Za-z0-9-])
+      vault_cloudflare_api_token: "TEST-DUMMY-TOKEN-NIE-PRAWDZIWY-000000000",
       vault_grafana_admin_password: "test-dummy-password",
       custom_dns_target_ip: "192.168.56.10",
       vault_cloudflared_tunnel_id: "00000000-0000-0000-0000-000000000000",
