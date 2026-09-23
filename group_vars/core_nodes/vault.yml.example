@@ -25,3 +25,9 @@ vault_cloudflared_credentials_json: "YOUR_CLOUDFLARE_TUNNEL_CREDENTIALS_JSON_HER
 vault_go2rtc_credentials:
   cam1: { user: "CAMERA_USER", password: "CHANGE_ME_CAMERA_PASSWORD" }
   cam2: { user: "", password: "CHANGE_ME_CAMERA_PASSWORD" }
+
+# bcrypt hash for the camera wall's basic_auth (user: camera_wall_user).
+# Generate it with:
+#   docker exec -it caddy caddy hash-password
+# (or: docker run --rm -it caddy:2.11-alpine caddy hash-password)
+vault_camera_wall_password_hash: "PASTE_BCRYPT_HASH_FROM_CADDY_HASH_PASSWORD"

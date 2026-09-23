@@ -53,6 +53,9 @@ cloudflared_version: "2026.8.2"
 go2rtc_dir: "/opt/go2rtc"
 go2rtc_version: "1.9.14"
 camera_wall_dir: "/opt/camera_wall"
+# Served by Caddy at <subdomain>.<domain_name>, behind basic_auth
+camera_wall_subdomain: "kamery"
+camera_wall_user: "kamery"
 
 # One list drives both go2rtc.yaml (with credentials) and the public
 # cameras.json (label, stream names, mode and fit only).

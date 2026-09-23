@@ -83,6 +83,31 @@
         reverse_proxy grafana:3000
     }
 
+    # Live camera wall (LAN only: no cloudflared ingress entry, see ADR-0011).
+    # An ALLOWLIST of paths, not a blocklist: /api/streams returns the RTSP
+    # URLs with camera passwords and /api/config can rewrite the config
+    # (including exec: sources). The player needs only /api/ws and its two
+    # scripts. No portfolio_headers here (ADR-0010): the go2rtc player injects
+    # inline styles that the strict CSP would block.
+    @kamery host {{ camera_wall_subdomain | default('kamery') }}.{{ domain_name }}
+    handle @kamery {
+        basic_auth {
+            {{ camera_wall_user | default('kamery') }} {{ vault_camera_wall_password_hash }}
+        }
+        @go2rtc path /api/ws /video-stream.js /video-rtc.js
+        handle @go2rtc {
+            reverse_proxy go2rtc:1984
+        }
+        @site path / /index.html /cameras.json
+        handle @site {
+            root * /srv/kamery
+            file_server
+        }
+        handle {
+            respond 403
+        }
+    }
+
     # Default response for unknown subdomains
     handle {
         respond "Homelab Infrastructure - Access Denied" 403

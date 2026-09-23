@@ -50,6 +50,8 @@ SHELL
       custom_dns_target_ip: "192.168.56.10",
       vault_cloudflared_tunnel_id: "00000000-0000-0000-0000-000000000000",
       vault_cloudflared_credentials_json: "{\"AccountTag\":\"TEST-DUMMY-NIE-PRAWDZIWY\",\"TunnelSecret\":\"VEVTVC1EVU1NWS1TRUNSRVQ=\",\"TunnelID\":\"00000000-0000-0000-0000-000000000000\",\"Endpoint\":\"\"}",
+      # bcrypt of "test-dummy-password" (caddy hash-password)
+      vault_camera_wall_password_hash: "$2a$14$igZl2JGNhtwWMFmNbIV7iedGrPAIvmefe6GRXlZniKCtkG1FX.jxW",
       # Unreachable TEST-NET cameras: the run checks structure, permissions and
       # idempotence, not video. The passwords exercise percent-encoding of
       # "%", "/", "@" and ":", and the empty user of a password-only account.

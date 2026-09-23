@@ -34,6 +34,7 @@ customDNS:
     "vaultwarden.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "grafana.{{ domain_name }}": "{{ custom_dns_target_ip }}"
     "qnap.{{ domain_name }}": "{{ custom_dns_target_ip }}"
+    "{{ camera_wall_subdomain | default('kamery') }}.{{ domain_name }}": "{{ custom_dns_target_ip }}"
 
 # 3. BLOCKING ADS / TRACKERS / MALWARE
 blocking:
