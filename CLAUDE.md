@@ -62,8 +62,8 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   `node_exporter_version`, `cadvisor_version`, `grafana_version`,
   `cloudflared_dir`, `cloudflared_version`, `go2rtc_dir`, `go2rtc_version`,
   `go2rtc_cameras`, `camera_wall_dir`, `camera_wall_subdomain`,
-  `camera_wall_user`) żyją w `group_vars/all/vars.yml` (nieobecny w repo,
-  tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
+  `camera_wall_user`, `camera_wall_trusted_ips`) żyją
+  w `group_vars/all/vars.yml` (nieobecny w repo, tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
   (zaszyfrowany Ansible Vault), m.in. `vault_go2rtc_credentials` i
   `vault_camera_wall_password_hash`.
 - Rola `portfolio` ma scenariusz Molecule
@@ -136,6 +136,24 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   Dlatego blok `@kamery` w Caddyfile to LISTA DOZWOLONYCH ścieżek
   (`/api/ws`, dwa pliki JS, strona), a wszystko inne dostaje 403. Nie
   zamieniaj tego na listę blokad.
+- **Caddy w Dockerze nie zawsze widzi prawdziwy adres klienta — nigdy nie
+  wpisuj adresu z sieci Dockera do `camera_wall_trusted_ips`.** Zmierzone na
+  AlmaLinux 9 + Docker 29.8.1 (backend iptables+firewalld, userland-proxy
+  włączony), tym samym układzie co produkcja: klient z LAN po IPv4 przychodzi
+  przez DNAT i Caddy widzi jego prawdziwy adres (`remote_ip`). Ale wszystko,
+  co Docker PROXUJE (docker-proxy) zamiast routować, przychodzi z adresu
+  bramy sieci `caddy-ingress` (np. `172.18.0.1`) — zmierzone dla połączeń
+  z samego hosta przez localhost po IPv4 i IPv6; klienci IPv6 z zewnątrz przy
+  sieci Dockera bez IPv6 idą tą samą drogą (zachowanie docker-proxy, nie
+  mierzone, bo LAN nie ma IPv6). Ruch z tunelu przychodzi z adresu kontenera
+  `cloudflared`. Adres bramy na liście przepuściłby więc bez logowania
+  każdego, kto tą drogą przychodzi. Rola `caddy` odrzuca `172.16.0.0/12`,
+  loopback, CIDR-y i każdą bramę sieci Dockera obecną na hoście (ADR-0012).
+  Wyjątek działa tylko dlatego, że router nie maskaruje ruchu między
+  VLAN-ami (masquerade tylko na WAN) i LAN nie ma IPv6 — jeśli któreś z tych
+  się zmieni, zmierz `remote_ip` ponownie. Produkcyjny Caddy nie ma logu
+  dostępu; do pomiaru wystarczy tymczasowy `respond "{remote_host}"` albo
+  dyrektywa `log` w teście na VM.
 - **`api.origin: "*"` w go2rtc wyłącznie do testów lokalnych, nigdy w roli.**
   W produkcji strona i API są pod jedną nazwą hosta; `"*"` pozwoliłoby
   dowolnej stronie w przeglądarce czytać API z hasłami.
