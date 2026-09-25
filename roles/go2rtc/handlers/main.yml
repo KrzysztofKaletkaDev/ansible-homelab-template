@@ -1,0 +1,6 @@
+---
+# go2rtc reads its config only at startup, so a restart (not a reload) is needed
+- name: Restart go2rtc
+  community.docker.docker_compose_v2:
+    project_src: "{{ go2rtc_dir | default('/opt/go2rtc') }}"
+    state: restarted

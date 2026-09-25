@@ -16,3 +16,18 @@ vault_grafana_admin_password: "CHANGE_ME_STRONG_PASSWORD"
 # ~/.cloudflared/<tunnel-id>.json credentials file, pasted as a single value.
 vault_cloudflared_tunnel_id: "YOUR_CLOUDFLARE_TUNNEL_ID_HERE"
 vault_cloudflared_credentials_json: "YOUR_CLOUDFLARE_TUNNEL_CREDENTIALS_JSON_HERE"
+
+# Camera credentials for go2rtc (roles/go2rtc), keyed by the "credentials"
+# field of go2rtc_cameras. Quote every value: an unquoted all-digit password
+# with a leading zero is parsed by YAML as an octal number. Special
+# characters are fine — the role percent-encodes them in the RTSP URL.
+# An empty user ("") is valid for cameras with a password-only account.
+vault_go2rtc_credentials:
+  cam1: { user: "CAMERA_USER", password: "CHANGE_ME_CAMERA_PASSWORD" }
+  cam2: { user: "", password: "CHANGE_ME_CAMERA_PASSWORD" }
+
+# bcrypt hash for the camera wall's basic_auth (user: camera_wall_user).
+# Generate it with:
+#   docker exec -it caddy caddy hash-password
+# (or: docker run --rm -it caddy:2.11-alpine caddy hash-password)
+vault_camera_wall_password_hash: "PASTE_BCRYPT_HASH_FROM_CADDY_HASH_PASSWORD"

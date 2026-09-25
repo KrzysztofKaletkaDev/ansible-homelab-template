@@ -17,3 +17,4 @@ force in the code — not a proposal.
 | [0008](0008-grafana-dashboards-as-code.md) | Grafana dashboards provisioned as code with `allowUiUpdates: false` | Accepted |
 | [0009](0009-www-to-apex-redirect-in-caddy.md) | www-to-apex redirect in Caddy instead of a Cloudflare Redirect Rule | Accepted |
 | [0010](0010-security-headers-scoped-to-static-site.md) | Security headers scoped to the static site handler | Accepted |
+| [0011](0011-live-camera-view-via-go2rtc.md) | LAN-only live camera view via go2rtc behind Caddy | Accepted |

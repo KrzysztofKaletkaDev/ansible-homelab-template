@@ -4,7 +4,7 @@
 
 A production-grade, declarative **Infrastructure as Code (IaC)** template for automating core homelab services on Enterprise Linux (AlmaLinux / RHEL 9).
 
-This project demonstrates an automated deployment of a containerized infrastructure stack featuring an internal DNS resolver with ad-blocking, a custom-compiled Caddy reverse proxy with automated Let's Encrypt TLS certificates via the Cloudflare DNS-01 challenge, a self-hosted password manager (Vaultwarden), a service dashboard (Homepage), and strict security isolation via Ansible Vault.
+This project demonstrates an automated deployment of a containerized infrastructure stack featuring an internal DNS resolver with ad-blocking, a custom-compiled Caddy reverse proxy with automated Let's Encrypt TLS certificates via the Cloudflare DNS-01 challenge, a self-hosted password manager (Vaultwarden), a service dashboard (Homepage), a LAN-only live camera wall (go2rtc), and strict security isolation via Ansible Vault.
 
 ---
 
@@ -22,6 +22,8 @@ graph TD
         Caddy -->|Ingress Response| Homepage[Homepage Gateway]
         Caddy -->|Ingress Response| Vaultwarden[Vaultwarden Password Manager]
         Caddy -->|Ingress Response| Grafana[Grafana Dashboards]
+        Caddy -->|file_server /srv/kamery| CameraWall[Camera wall page]
+        Caddy -->|/api/ws + player JS only, caddy-ingress network| Go2rtc[go2rtc live view]
 
         subgraph monitoring ["Monitoring Stack (compose network)"]
             Prometheus[Prometheus] -->|scrape| NodeExporter[node_exporter]
@@ -32,6 +34,9 @@ graph TD
     end
 
     Caddy -->|HTTPS Reverse Proxy| QNAP[QNAP Storage NAS]
+    Client -->|WebRTC :8555/udp| Go2rtc
+    Go2rtc -->|RTSP pull, view only| Cameras[IP Cameras]
+    QNAP -->|QVR records directly| Cameras
 
     Cloudflare[Cloudflare DNS API] <-->|ACME DNS-01 Challenge| Caddy
 ```
@@ -40,13 +45,14 @@ graph TD
 
 ## 🚀 Key Features & Architectural Design
 
-- **Infrastructure as Code (IaC):** Idempotent Ansible playbooks with modular, custom-crafted roles (`docker`, `blocky`, `portfolio`, `caddy`, `monitoring`, `vaultwarden`, `homepage`, `cloudflared`).
+- **Infrastructure as Code (IaC):** Idempotent Ansible playbooks with modular, custom-crafted roles (`docker`, `blocky`, `portfolio`, `camera_wall`, `caddy`, `monitoring`, `vaultwarden`, `homepage`, `go2rtc`, `cloudflared`).
 - **Multi-Stage Container Compilation:** Custom-built Caddy Docker image using `xcaddy` to embed the Cloudflare DNS module for automated wildcard SSL certificate issuance (`*.domain.com`).
 - **Automated ACME DNS-01 Challenge:** Automated SSL/TLS issuance without exposing HTTP ports to the public Internet.
 - **Ad-Blocking & Privacy DNS:** Containerized Blocky DNS resolver with local DNS rewrites (`customDNS`) and external blocklists.
 - **Self-Hosted Password Manager:** Vaultwarden (Bitwarden-compatible server) deployed behind Caddy, with no ports published directly — reachable only through the reverse proxy's internal Docker network.
 - **Unified Service Dashboard:** Homepage, auto-discovering running containers via the Docker socket (read-only) and surfacing host resource stats.
 - **Monitoring & Observability as Code:** Prometheus, Grafana, node_exporter and cAdvisor deployed behind Caddy. Grafana dashboards (datasources, providers, JSON panels) are provisioned entirely as code from Jinja2 templates with `allowUiUpdates: false` — not clicked together in the UI — and Prometheus collects host metrics, container metrics, and Blocky's own DNS metrics.
+- **LAN-only Live Camera Wall:** go2rtc restreams the IP cameras for viewing only (recording stays on the NAS, pulling from the cameras directly) and a static grid page is served by Caddy at `kamery.<domain>` behind `basic_auth`. Caddy forwards an allowlist of paths to go2rtc — `/api/ws` and the two player scripts — because the rest of the go2rtc API exposes camera passwords and live config editing. One camera list in `group_vars` drives both the go2rtc config (with credentials) and the public `cameras.json` (labels and stream names only). No tunnel ingress: the view is reachable from the LAN only. See [ADR-0011](docs/adr/0011-live-camera-view-via-go2rtc.md).
 - **Zero-Trust Ingress via Cloudflare Tunnel:** A locally-managed `cloudflared` tunnel (`config.yml` provisioned as code) exposes the domain to the Internet without opening a single inbound port on the host — no firewalld changes, outbound-only connection to Cloudflare's edge.
 - **Enterprise DevSecOps Practices:** Strict separation of environment logic, topology, and encrypted secrets using Ansible Vault. Sensitive data is sanitized from version control via `.gitignore` patterns.
 - **System Integration:** Automated configuration of system services (`systemd`), group privileges, and dynamic package repository resolution on Enterprise Linux.
@@ -103,10 +109,12 @@ Metrics are collected by Prometheus and visualised in Grafana, with all dashboar
     ├── blocky/                 # Blocky DNS Resolver container deployment & configuration
     ├── portfolio/              # Clones the static kaletkadev.com site for Caddy's file_server
     │   └── molecule/            # Molecule test scenario for this role
+    ├── camera_wall/            # Static camera grid page (index.html + cameras.json) for Caddy's file_server
     ├── caddy/                  # Custom Caddy Reverse Proxy deployment & xcaddy build
     ├── monitoring/              # Prometheus, node_exporter, cAdvisor & Grafana (dashboards as code)
     ├── vaultwarden/            # Vaultwarden (Bitwarden-compatible) password manager deployment
     ├── homepage/               # Homepage service dashboard deployment & configuration
+    ├── go2rtc/                 # go2rtc live-view restreamer for the IP cameras (view only, no recording)
     └── cloudflared/            # Zero-trust ingress via a locally-managed Cloudflare Tunnel
 ```
 
@@ -142,6 +150,23 @@ cp group_vars/core_nodes/vault.yml.example group_vars/core_nodes/vault.yml
 ansible-vault encrypt group_vars/core_nodes/vault.yml
 ```
 
+#### Camera wall (`go2rtc` + `camera_wall`)
+
+- In `group_vars/all/vars.yml`, define `go2rtc_cameras` — one entry per camera (`id`, `label`, `host`, `sub_path`, optional `main_path`, `credentials`, `transcode`, `mode`, `fit`; see the comments in `vars.yml.example`). Optionally override `go2rtc_dir`, `go2rtc_version`, `camera_wall_dir`, `camera_wall_subdomain` and `camera_wall_user`. Copying `vars.yml.example` again does not update an existing `vars.yml` — add the new keys by hand.
+- In `group_vars/core_nodes/vault.yml`, add `vault_go2rtc_credentials` — a map keyed by each camera's `credentials` value, with `user` and `password`. Quote every value. Special characters are fine (the role percent-encodes them), and an empty `user: ""` is valid for password-only accounts.
+- Also in `vault.yml`, add `vault_camera_wall_password_hash` — the bcrypt hash for the page's `basic_auth` login (user `camera_wall_user`, `kamery` by default). Generate it with Caddy itself:
+
+```bash
+# on the host, once Caddy is running
+docker exec -it caddy caddy hash-password
+# or anywhere with Docker
+docker run --rm -it caddy:2.11-alpine caddy hash-password
+```
+
+Paste the printed `$2a$...` string as the value. The Caddyfile embeds it, which is why the rendered `Caddyfile` is written with mode `0600`.
+
+The page is LAN-only: Blocky resolves `kamery.<domain>` to the host and there is deliberately no Cloudflare Tunnel ingress for it. Cameras that need WebRTC (`mode: webrtc`) also need UDP `8555` to reach the host from the viewing clients' network segment — a router rule that lives outside this repo.
+
 ### 3. One-time Cloudflare Tunnel bootstrap
 
 The `cloudflared` role deploys a **locally-managed** tunnel — it provisions the runtime and `config.yml` as code, but it does not create the tunnel itself. Before the first `site.yml` run, authenticate and create the tunnel manually from the `cloudflared` CLI on your workstation:
@@ -176,8 +201,8 @@ The same workflow also runs a `molecule test` scenario for the `portfolio` role 
 ## 🔒 Security Principles Applied
 
 - **Zero Secret Leakage:** `.gitignore` enforces strictly parameterized `.example` templates while excluding production variables and state files.
-- **Least Privilege Enforcement:** Service configuration files generated on target nodes strictly enforce system permissions (`0644` for files, `0755` for directories, `0600` for any generated file embedding a Vault secret — e.g. Caddy's `docker-compose.yml` with the Cloudflare API token, and the monitoring stack's `docker-compose.yml` with the Grafana admin password).
-- **Minimized Host Exposure:** None of the monitoring containers (Prometheus, node_exporter, cAdvisor, Grafana) publish ports directly to the host — Grafana is reachable exclusively through Caddy over the internal `caddy-ingress` Docker network, the same isolation model used for Vaultwarden. Blocky is the exception: it must answer DNS on the host's network, so the `blocky` role publishes `53/tcp`, `53/udp`, and its Prometheus metrics endpoint `4000/tcp`, opening all three in `firewalld` for the local network. This is accepted as a homelab-scoped trade-off, not hidden — a stricter setup would scope those firewalld rules to a rich rule restricted to the LAN source subnet instead of the whole zone.
+- **Least Privilege Enforcement:** Service configuration files generated on target nodes strictly enforce system permissions (`0644` for files, `0755` for directories, `0600` for any generated file embedding a Vault secret — e.g. Caddy's `docker-compose.yml` with the Cloudflare API token, the monitoring stack's `docker-compose.yml` with the Grafana admin password, Caddy's `Caddyfile` with the camera wall `basic_auth` hash, and go2rtc's `go2rtc.yaml` with the camera credentials).
+- **Minimized Host Exposure:** None of the monitoring containers (Prometheus, node_exporter, cAdvisor, Grafana) publish ports directly to the host — Grafana is reachable exclusively through Caddy over the internal `caddy-ingress` Docker network, the same isolation model used for Vaultwarden. Blocky is the exception: it must answer DNS on the host's network, so the `blocky` role publishes `53/tcp`, `53/udp`, and its Prometheus metrics endpoint `4000/tcp`, opening all three in `firewalld` for the local network. This is accepted as a homelab-scoped trade-off, not hidden — a stricter setup would scope those firewalld rules to a rich rule restricted to the LAN source subnet instead of the whole zone. go2rtc publishes only `8555/udp` (WebRTC media); its API (`1984`) and built-in RTSP server (`8554`) stay on the internal Docker network, and Caddy forwards only the paths the player needs.
 - **Encrypted State:** All API tokens and credentials stored within the repository structure are encrypted using AES-256 via Ansible Vault.
 
 ---

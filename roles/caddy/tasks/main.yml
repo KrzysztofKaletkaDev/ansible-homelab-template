@@ -32,7 +32,8 @@
     dest: "{{ caddy_dir | default('/opt/caddy') }}/etc/Caddyfile"
     owner: "{{ ansible_user }}"
     group: "{{ ansible_user }}"
-    mode: '0644'
+    # Contains the camera wall basic_auth hash from Vault
+    mode: '0600'
   notify: Reload caddy
 
 - name: Wygeneruj plik docker-compose.yml z szablonu Jinja2

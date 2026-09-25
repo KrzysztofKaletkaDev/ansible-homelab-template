@@ -1,0 +1,68 @@
+---
+# ==============================================================================
+# ROLE: go2rtc (roles/go2rtc/tasks/main.yml)
+# Deploys go2rtc as a live-view restreamer for the IP cameras. It only shows
+# the streams — recording stays on the NAS, which pulls from the cameras
+# directly. The API (1984) and the built-in RTSP server (8554) stay inside the
+# caddy-ingress network; only WebRTC media (8555/udp) is published on the host.
+# ==============================================================================
+
+- name: Stwórz strukturę katalogów dla go2rtc
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+  loop:
+    - "{{ go2rtc_dir | default('/opt/go2rtc') }}"
+    - "{{ go2rtc_dir | default('/opt/go2rtc') }}/config"
+
+- name: Zweryfikuj definicje kamer w go2rtc_cameras
+  ansible.builtin.assert:
+    that:
+      - item.id is defined
+      - item.id is match('^[a-z0-9_]+$')
+      - item.label is defined
+      - item.host is defined
+      - item.sub_path is defined
+      - item.credentials is not defined or item.credentials in vault_go2rtc_credentials | default({})
+    fail_msg: >-
+      Niepoprawna definicja kamery w go2rtc_cameras (wymagane: id [a-z0-9_],
+      label, host, sub_path; credentials musi istnieć w vault_go2rtc_credentials)
+    quiet: true
+  loop: "{{ go2rtc_cameras | default([]) }}"
+  loop_control:
+    label: "{{ item.id | default('?') }}"
+
+- name: Wygeneruj plik go2rtc.yaml z szablonu Jinja2
+  ansible.builtin.template:
+    src: go2rtc.yaml.j2
+    dest: "{{ go2rtc_dir | default('/opt/go2rtc') }}/config/go2rtc.yaml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    # Contains camera credentials from Vault
+    mode: '0600'
+  # Keep camera credentials out of --diff output
+  diff: false
+  notify: Restart go2rtc
+
+- name: Wygeneruj plik docker-compose.yml z szablonu Jinja2
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ go2rtc_dir | default('/opt/go2rtc') }}/docker-compose.yml"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0644'
+
+- name: Otwórz port WebRTC (8555/udp) w zaporze firewalld
+  ansible.posix.firewalld:
+    port: 8555/udp
+    permanent: true
+    state: enabled
+    immediate: true
+
+- name: Uruchom stos Docker Compose z go2rtc
+  community.docker.docker_compose_v2:
+    project_src: "{{ go2rtc_dir | default('/opt/go2rtc') }}"
+    state: present

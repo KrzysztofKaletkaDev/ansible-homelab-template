@@ -5,9 +5,10 @@ Ansible IaC dla jednowęzłowego homelabu na AlmaLinux 9: DNS z ad-blockingiem
 (Blocky), reverse proxy z auto-TLS przez Cloudflare DNS-01 (Caddy, budowany
 custom obrazem xcaddy), self-hosted menedżer haseł (Vaultwarden), dashboard
 usług (Homepage), statyczna strona wizytówkowa (kaletkadev.com, serwowana
-bezpośrednio przez file_server Caddy), stos monitoringu (Prometheus,
-node_exporter, cAdvisor, Grafana z dashboardami provisionowanymi jako kod)
-i zero-trust ingress bez otwartych portów przez Cloudflare Tunnel
+bezpośrednio przez file_server Caddy), podgląd kamer na żywo w LAN (go2rtc
+i statyczna siatka kamer pod `kamery.<domena>`, ADR-0011), stos monitoringu
+(Prometheus, node_exporter, cAdvisor, Grafana z dashboardami provisionowanymi
+jako kod) i zero-trust ingress bez otwartych portów przez Cloudflare Tunnel
 (`cloudflared`, locally-managed, `config.yml` jako kod) — wszystko na
 Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
 (`core_nodes`).
@@ -40,11 +41,18 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   `portfolio` idzie PRZED `caddy` — z innego powodu niż siatka
   `caddy-ingress`: to rola `caddy` montuje `{{ portfolio_dir }}/site` jako
   bind mount `:ro` do kontenera, więc katalog z treścią musi już istnieć
-  (i być sklonowany) zanim Compose spróbuje go zamontować. `cloudflared`
-  idzie NA KOŃCU listy, po `homepage` — potrzebuje istniejącej sieci
-  `caddy-ingress` (dołącza się jako `external: true`, tak samo jak
-  `monitoring`/`vaultwarden`/`homepage`), a kolejność względem pozostałych
-  usług poza `caddy` nie ma znaczenia.
+  (i być sklonowany) zanim Compose spróbuje go zamontować. Z tego samego
+  powodu `camera_wall` idzie PRZED `caddy` (zaraz po `portfolio`): `caddy`
+  montuje `{{ camera_wall_dir }}/site` jako `:ro`, a Docker przy brakującej
+  ścieżce bind mountu po cichu tworzy pusty katalog należący do roota —
+  trafiliśmy na to przy testach. Nie „naprawiaj” tego tworzeniem katalogu
+  po starcie Caddy. `go2rtc` idzie PO `caddy` (po `homepage`, przed
+  `cloudflared`), bo dołącza do `caddy-ingress` jako `external: true`.
+  Obie role kamer to celowo dwie osobne role właśnie przez tę kolejność
+  (ADR-0011). `cloudflared` idzie NA KOŃCU listy — potrzebuje istniejącej
+  sieci `caddy-ingress` (dołącza się jako `external: true`, tak samo jak
+  `monitoring`/`vaultwarden`/`homepage`/`go2rtc`), a kolejność względem
+  pozostałych usług poza `caddy` nie ma znaczenia.
 - `roles/*/tasks/main.yml` — logika; `roles/*/templates/*.j2` — konfiguracja
   generowana Jinja2; `roles/*/handlers/main.yml` — restart/reload po zmianie.
 - Zmienne domyślne (`domain_name`, `ansible_user`, IP urządzeń,
@@ -52,17 +60,21 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   `homepage_version`, `portfolio_dir`, `portfolio_repo_url`,
   `blocky_version`, `monitoring_dir`, `prometheus_version`,
   `node_exporter_version`, `cadvisor_version`, `grafana_version`,
-  `cloudflared_dir`, `cloudflared_version`) żyją w `group_vars/all/vars.yml`
-  (nieobecny w repo, tylko `.example`). Sekrety — w
-  `group_vars/core_nodes/vault.yml` (zaszyfrowany Ansible Vault).
+  `cloudflared_dir`, `cloudflared_version`, `go2rtc_dir`, `go2rtc_version`,
+  `go2rtc_cameras`, `camera_wall_dir`, `camera_wall_subdomain`,
+  `camera_wall_user`) żyją w `group_vars/all/vars.yml` (nieobecny w repo,
+  tylko `.example`). Sekrety — w `group_vars/core_nodes/vault.yml`
+  (zaszyfrowany Ansible Vault), m.in. `vault_go2rtc_credentials` i
+  `vault_camera_wall_password_hash`.
 - Rola `portfolio` ma scenariusz Molecule
   (`roles/portfolio/molecule/default/`: create/converge/idempotence/verify/
   destroy), uruchamiany lokalnie przez `cd roles/portfolio && molecule test`
   oraz automatycznie w CI (job `molecule` w `.github/workflows/lint.yml`).
-  Pozostałych siedem ról NIE jest pokrytych Molecule — wymagałoby to
+  Pozostałe role NIE są pokryte Molecule — wymagałoby to
   docker-in-docker (`community.docker.docker_compose_v2` potrzebuje demona
   Dockera wewnątrz kontenera testowego) albo obrazu z działającym systemd
-  i D-Bus (dla firewalld w rolach `docker`, `blocky`, `caddy`). Dla tych ról
+  i D-Bus (dla firewalld w rolach `docker`, `blocky`, `caddy`, `go2rtc`).
+  `camera_wall` technicznie by się dało, ale na razie go nie ma. Dla tych ról
   jedyna realna weryfikacja przed produkcją to nadal `vagrant up`/
   `vagrant provision` (patrz `Vagrantfile`). Nie zakładaj, że pokrycie
   Molecule jest szersze niż opisane tutaj.
@@ -114,6 +126,26 @@ Dockerze, spięte wspólną siecią `caddy-ingress`. Docelowo jeden host
   `provisioner.env` w `molecule.yml` ustawić
   `ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/..` (patrz
   `roles/portfolio/molecule/default/molecule.yml`).
+- **go2rtc 1.9.14: przekodowanie obrazu tylko z adresem RTSP wprost.**
+  Forma odwołująca się do nazwy strumienia (`ffmpeg:<strumień>#video=h264`)
+  nie uruchamia ffmpeg — producent startuje i gaśnie w kilka milisekund.
+  Działa wyłącznie `ffmpeg:rtsp://USER:PASS@HOST:554/ŚCIEŻKA#video=h264#audio=aac`
+  (tak renderuje to `roles/go2rtc/templates/go2rtc.yaml.j2`).
+- **`/api/streams` w go2rtc zwraca adresy RTSP razem z hasłami kamer,**
+  a `/api/config` pozwala przepisać konfigurację (w tym źródła `exec:`).
+  Dlatego blok `@kamery` w Caddyfile to LISTA DOZWOLONYCH ścieżek
+  (`/api/ws`, dwa pliki JS, strona), a wszystko inne dostaje 403. Nie
+  zamieniaj tego na listę blokad.
+- **`api.origin: "*"` w go2rtc wyłącznie do testów lokalnych, nigdy w roli.**
+  W produkcji strona i API są pod jedną nazwą hosta; `"*"` pozwoliłoby
+  dowolnej stronie w przeglądarce czytać API z hasłami.
+- **Wbudowanego serwera RTSP go2rtc (8554) nie wyłączaj.** ffmpeg publikuje
+  przez niego przekodowany strumień z powrotem do go2rtc
+  (`rtsp://127.0.0.1:8554/...`). Portu po prostu nie publikujemy na hoście.
+- **Hasła kamer w adresach RTSP muszą być zakodowane procentowo.** Niezakodowane
+  `%%` daje `invalid url escape`. Filtr `urlencode` zostawia `/` bez zmian,
+  dlatego szablon dokłada `| replace('/', '%2F')`. Hasła w vault.yml zawsze
+  w cudzysłowach — same cyfry z wiodącym zerem YAML czyta jako liczbę ósemkową.
 
 ## Konwencje kodu
 

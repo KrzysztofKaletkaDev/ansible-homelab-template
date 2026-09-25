@@ -14,6 +14,7 @@ services:
       - {{ caddy_dir | default('/opt/caddy') }}/data:/data
       - {{ caddy_dir | default('/opt/caddy') }}/config:/config
       - {{ portfolio_dir | default('/opt/portfolio') }}/site:/srv/portfolio:ro
+      - {{ camera_wall_dir | default('/opt/camera_wall') }}/site:/srv/kamery:ro
     networks:
       - caddy-ingress
 

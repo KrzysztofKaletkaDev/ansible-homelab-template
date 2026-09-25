@@ -7,8 +7,10 @@
     - docker
     - blocky
     - portfolio
+    - camera_wall
     - caddy
     - monitoring
     - vaultwarden
     - homepage
+    - go2rtc
     - cloudflared
