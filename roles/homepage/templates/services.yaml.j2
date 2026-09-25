@@ -33,3 +33,9 @@
         href: https://grafana.{{ domain_name }}
         description: Dashboardy monitoringu hosta, kontenerów i DNS
         container: grafana
+
+    - Kamery:
+        icon: go2rtc
+        href: https://{{ camera_wall_subdomain | default('kamery') }}.{{ domain_name }}
+        description: Podgląd kamer na żywo w LAN (go2rtc)
+        container: go2rtc
