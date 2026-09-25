@@ -91,7 +91,16 @@
     # inline styles that the strict CSP would block.
     @kamery host {{ camera_wall_subdomain | default('kamery') }}.{{ domain_name }}
     handle @kamery {
+{% if camera_wall_trusted_ips | default([]) | length > 0 %}
+        # Login is skipped ONLY for camera_wall_trusted_ips (the wall kiosk,
+        # ADR-0012); the path allowlist below still applies to everyone.
+        # remote_ip is the TCP peer, not X-Forwarded-For. Never list a Docker
+        # address here: localhost traffic reaches Caddy as the network gateway.
+        @kamery_login not remote_ip {{ camera_wall_trusted_ips | join(' ') }}
+        basic_auth @kamery_login {
+{% else %}
         basic_auth {
+{% endif %}
             {{ camera_wall_user | default('kamery') }} {{ vault_camera_wall_password_hash }}
         }
         @go2rtc path /api/ws /video-stream.js /video-rtc.js

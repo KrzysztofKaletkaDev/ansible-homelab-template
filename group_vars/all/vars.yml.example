@@ -56,6 +56,15 @@ camera_wall_dir: "/opt/camera_wall"
 # Served by Caddy at <subdomain>.<domain_name>, behind basic_auth
 camera_wall_subdomain: "kamery"
 camera_wall_user: "kamery"
+# LAN addresses that skip the camera-wall login — the login only: the path
+# allowlist and the final 403 still apply (ADR-0012). Plain IPv4 addresses,
+# no ranges; meant for the wall kiosk, whose address is a DHCP reservation in
+# ansible-network-template. Empty list = everyone logs in.
+# NEVER a Docker address (e.g. the caddy-ingress gateway 172.x.0.1): whatever
+# Docker proxies instead of routing (connections from the host itself, IPv6
+# clients) reaches Caddy FROM the gateway, so listing it lets all of that skip
+# the login. The caddy role refuses Docker addresses.
+camera_wall_trusted_ips: []
 
 # One list drives both go2rtc.yaml (with credentials) and the public
 # cameras.json (label, stream names, mode and fit only).
