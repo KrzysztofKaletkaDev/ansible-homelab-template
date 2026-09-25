@@ -26,6 +26,50 @@
     mode: '0644'
   register: caddy_dockerfile
 
+# camera_wall_trusted_ips skips the camera-wall login by remote_ip (ADR-0012).
+# Docker hands Caddy the network gateway as the source for everything it
+# proxies instead of routing (host-local and IPv6 clients), and container
+# addresses for tunnel traffic — so a Docker address on the list would open
+# the login to all of those. Refuse them: the 172.16.0.0/12 default pools
+# outright, plus every gateway actually present on this host.
+- name: Pobierz listę sieci Dockera (walidacja camera_wall_trusted_ips)
+  ansible.builtin.command:
+    cmd: docker network ls -q
+  register: caddy_docker_network_ids
+  changed_when: false
+  check_mode: false
+  when: camera_wall_trusted_ips | default([]) | length > 0
+
+- name: Pobierz bramy sieci Dockera (walidacja camera_wall_trusted_ips)
+  ansible.builtin.command:
+    argv: "{{ ['docker', 'network', 'inspect'] + caddy_docker_network_ids.stdout_lines }}"
+  register: caddy_docker_networks
+  changed_when: false
+  check_mode: false
+  when: camera_wall_trusted_ips | default([]) | length > 0
+
+- name: Zweryfikuj camera_wall_trusted_ips (tylko adresy LAN, nigdy Dockera)
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item is match('^(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])(\.(25[0-5]|2[0-4][0-9]|1?[0-9]?[0-9])){3}$')
+      - item is not match('^(0|127)\.')
+      - item is not match('^172\.(1[6-9]|2[0-9]|3[01])\.')
+      - item not in caddy_docker_gateways
+    fail_msg: >-
+      camera_wall_trusted_ips: '{{ item }}' odrzucony — dozwolone są wyłącznie
+      pojedyncze adresy IPv4 klientów w LAN, nigdy adres z sieci Dockera
+      (brama {{ caddy_docker_gateways | join(', ') }} przepuściłaby ruch
+      z samego hosta i z IPv6 bez logowania). Patrz ADR-0012.
+    quiet: true
+  loop: "{{ camera_wall_trusted_ips | default([]) }}"
+  vars:
+    caddy_docker_gateways: >-
+      {{ caddy_docker_networks.stdout | from_json
+         | map(attribute='IPAM') | map(attribute='Config') | select
+         | flatten | selectattr('Gateway', 'defined')
+         | map(attribute='Gateway') | list }}
+
 - name: Wygeneruj plik Caddyfile z szablonu Jinja2
   ansible.builtin.template:
     src: Caddyfile.j2

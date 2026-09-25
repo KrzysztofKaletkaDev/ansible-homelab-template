@@ -18,3 +18,4 @@ force in the code — not a proposal.
 | [0009](0009-www-to-apex-redirect-in-caddy.md) | www-to-apex redirect in Caddy instead of a Cloudflare Redirect Rule | Accepted |
 | [0010](0010-security-headers-scoped-to-static-site.md) | Security headers scoped to the static site handler | Accepted |
 | [0011](0011-live-camera-view-via-go2rtc.md) | LAN-only live camera view via go2rtc behind Caddy | Accepted |
+| [0012](0012-camera-wall-login-exception-by-client-address.md) | Camera-wall login exception by client address | Accepted |
