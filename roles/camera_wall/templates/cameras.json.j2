@@ -1,11 +1,13 @@
 {#-
   Public file: every viewer of the page downloads it. Only stream names and
   display options go here — never hosts, paths or credentials. No "go2rtc"
-  key either: the page resolves the API relative to its own URL.
+  key either: the page resolves the API relative to its own URL. "id" is the
+  stable camera id from go2rtc_cameras, used by page parameters (?glowna=).
 -#}
 {%- set cameras = [] -%}
 {%- for cam in go2rtc_cameras | default([]) -%}
 {%- set _ = cameras.append({
+    'id': cam.id,
     'label': cam.label,
     'grid': cam.id ~ 's',
     'full': cam.id if cam.main_path | default('') else cam.id ~ 's',

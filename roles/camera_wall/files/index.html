@@ -145,6 +145,30 @@
       align-content: start;
     }
   }
+
+  /* Układ rejestratora (?uklad=nvr6): stała siatka 3x3 na cały ekran, duże
+     pole 2x2 w lewym górnym rogu, reszta wypełnia prawą kolumnę, potem dolny
+     rząd. Bez nagłówka, marginesów, zaokrągleń i obramowań; 2 px czarnej
+     szczeliny. minmax(0, 1fr), bo inaczej wymiary wideo rozpychają ścieżki.
+     Wszystko pod body.nvr — bez parametru nic z tego nie obowiązuje. */
+  body.nvr { padding: 0; background: #000; height: 100%; overflow: hidden; }
+  body.nvr header { display: none; }
+  body.nvr #grid {
+    gap: 2px;
+    background: #000;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(3, minmax(0, 1fr));
+    align-content: stretch;
+    justify-content: stretch;
+  }
+  body.nvr .tile {
+    aspect-ratio: auto;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  body.nvr .tile.main { grid-column: 1 / span 2; grid-row: 1 / span 2; }
+  body.nvr .label { border-top-right-radius: 0; }
 </style>
 </head>
 <body>
@@ -164,6 +188,19 @@
   const grid = document.getElementById('grid');
   const msg  = document.getElementById('msg');
   let cams = [], base = '';
+
+  // Opcjonalne parametry adresu (opis w README roli). Bez nich strona działa
+  // dokładnie jak dotąd: siatka automatyczna.
+  //   uklad=nvr6               — układ rejestratora: jedno duże pole + pięć
+  //   glowna=<id>              — kamera w dużym polu (id z cameras.json)
+  //   glowna_strumien=sub|main — z którego strumienia duże pole gra w układzie
+  const params = new URLSearchParams(location.search);
+  const uklad = params.get('uklad');
+  const nvr = uklad === 'nvr6';
+  if (uklad !== null && !nvr) {
+    console.warn(`Kamery: nieznany układ "${uklad}" — zostaje siatka automatyczna.`);
+  }
+  if (nvr) document.body.classList.add('nvr');
 
   function fail(text) {
     msg.hidden = false;
@@ -203,9 +240,39 @@
     tile.prepend(el);
   }
 
-  cams.forEach(cam => {
+  // Układ rejestratora: duże pole + do pięciu mniejszych, w kolejności z listy.
+  // Zwraca kafelki do narysowania i strumień, z którego każdy gra w układzie.
+  function nvrLayout() {
+    if (!cams.length) return [];
+    const wanted = params.get('glowna');
+    let main = wanted === null ? cams[0] : cams.find(c => c.id === wanted);
+    if (!main) {
+      console.warn(`Kamery: nieznana kamera glowna="${wanted}" — w dużym polu pierwsza z listy.`);
+      main = cams[0];
+    }
+    let stream = params.get('glowna_strumien');
+    if (stream === null) stream = 'sub';
+    if (stream !== 'sub' && stream !== 'main') {
+      console.warn(`Kamery: nieznany glowna_strumien="${stream}" — duże pole gra ze strumienia sub.`);
+      stream = 'sub';
+    }
+    const rest = cams.filter(c => c !== main);
+    if (rest.length > 5) {
+      console.warn('Kamery: układ nvr6 mieści 5 mniejszych pól — pominięte: '
+        + rest.slice(5).map(c => c.id).join(', ') + '.');
+    }
+    return [
+      { cam: main, stream: stream === 'main' ? main.full : main.grid, main: true },
+      ...rest.slice(0, 5).map(cam => ({ cam, stream: cam.grid })),
+    ];
+  }
+
+  const tiles = nvr ? nvrLayout() : cams.map(cam => ({ cam, stream: cam.grid }));
+
+  tiles.forEach(({ cam, stream, main }) => {
     const tile = document.createElement('button');
     tile.className = 'tile';
+    if (main) tile.classList.add('main');
     tile.dataset.fit = cam.fit || 'contain';
     tile.setAttribute('aria-label', cam.label);
 
@@ -214,7 +281,7 @@
     label.textContent = cam.label;
     tile.appendChild(label);
 
-    setStream(tile, cam.grid, cam.mode);
+    setStream(tile, stream, cam.mode);
 
     // Klik = pełny ekran tej kamery. Strumień podmienia się na główny
     // dopiero w reakcji na zdarzenie fullscreenchange, poniżej.
@@ -224,6 +291,7 @@
     });
 
     tile._cam = cam;
+    tile._grid = stream;   // strumień w układzie; pełny ekran zawsze gra cam.full
     grid.appendChild(tile);
   });
 
@@ -231,7 +299,7 @@
     const fsEl = document.fullscreenElement;
     grid.querySelectorAll('.tile').forEach(tile => {
       const cam = tile._cam;
-      const want = (tile === fsEl) ? cam.full : cam.grid;
+      const want = (tile === fsEl) ? cam.full : tile._grid;
       if (tile._current !== want) {
         setStream(tile, want, cam.mode);
         tile._current = want;
@@ -247,6 +315,7 @@
 
   // Dobiera liczbę kolumn tak, żeby kafelki 16:9 wyszły jak największe.
   function fit() {
+    if (nvr) return;                        // układ rejestratora jest stały
     if (window.innerWidth <= 600) return;   // telefon ma własny układ w CSS
     const gap = 8, n = cams.length;
     const W = grid.clientWidth, H = grid.clientHeight;
