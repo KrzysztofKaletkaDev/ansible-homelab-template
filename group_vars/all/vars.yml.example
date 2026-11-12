@@ -7,6 +7,13 @@
 # Main system user on target servers (owner of files and containers)
 ansible_user: "sysadmin"
 
+# List of public SSH keys authorized for the admin user (roles/common).
+# These are public keys, not secrets, so they live here instead of vault.yml.
+common_authorized_keys: []
+
+# Allow the wheel group to run sudo without a password prompt (roles/common)
+common_sudo_nopasswd: true
+
 # Main domain used for services in the homelab environment
 domain_name: "example.com"
 

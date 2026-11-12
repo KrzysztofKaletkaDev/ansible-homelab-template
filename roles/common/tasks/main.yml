@@ -1,0 +1,13 @@
+---
+# ==============================================================================
+# ROLE: Common (roles/common/tasks/main.yml)
+# Baseline for new AlmaLinux 9 hosts: base packages and the admin user with an
+# SSH key and sudo access. Firewalld, sshd hardening, chrony, SELinux and
+# journald are intentionally out of scope for this role so far.
+# ==============================================================================
+
+- name: Zaimportuj instalację pakietów bazowych
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Zaimportuj konfigurację użytkownika administracyjnego
+  ansible.builtin.import_tasks: user.yml

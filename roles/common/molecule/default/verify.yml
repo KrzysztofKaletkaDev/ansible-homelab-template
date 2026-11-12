@@ -1,0 +1,38 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+  vars:
+    common_test_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDummyKeyForMoleculeTestingOnly molecule@test"
+  tasks:
+    - name: Pobierz informacje o użytkowniku administracyjnym
+      ansible.builtin.getent:
+        database: passwd
+        key: "{{ ansible_user }}"
+      register: common_user_entry
+
+    - name: Pobierz zawartość pliku authorized_keys
+      ansible.builtin.slurp:
+        path: "{{ common_user_entry.ansible_facts.getent_passwd[ansible_user][4] }}/.ssh/authorized_keys"
+      register: common_authorized_keys_file
+
+    - name: Pobierz informacje o pliku sudoers dla grupy wheel
+      ansible.builtin.stat:
+        path: /etc/sudoers.d/99-wheel-nopasswd
+      register: common_sudoers_file
+
+    - name: Pobierz zawartość pliku sudoers dla grupy wheel
+      ansible.builtin.slurp:
+        path: /etc/sudoers.d/99-wheel-nopasswd
+      register: common_sudoers_file_content
+
+    - name: Zweryfikuj stan użytkownika administracyjnego i konfiguracji sudo
+      ansible.builtin.assert:
+        that:
+          - ansible_user in common_user_entry.ansible_facts.getent_passwd
+          - common_test_key in (common_authorized_keys_file.content | b64decode)
+          - common_sudoers_file.stat.exists
+          - common_sudoers_file.stat.mode == '0440'
+          - "'NOPASSWD' in (common_sudoers_file_content.content | b64decode)"
+        fail_msg: "Rola common nie skonfigurowała poprawnie użytkownika administracyjnego lub sudo"
+        success_msg: "Użytkownik administracyjny, klucz SSH i sudo bez hasła są skonfigurowane poprawnie"
