@@ -282,6 +282,7 @@
     tile.appendChild(label);
 
     setStream(tile, stream, cam.mode);
+    tile._current = stream;   // bez tego pierwszy fullscreenchange odbudowuje wszystkie kafelki
 
     // Klik = pełny ekran tej kamery. Strumień podmienia się na główny
     // dopiero w reakcji na zdarzenie fullscreenchange, poniżej.
