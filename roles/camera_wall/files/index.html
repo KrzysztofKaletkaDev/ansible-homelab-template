@@ -185,6 +185,20 @@
 <script type="module" src="video-stream.js"></script>
 <script>
 (async function () {
+  // Watchdog odtwarzania (ADR-0013, README roli). Odtwarzacz go2rtc łączy się
+  // od nowa tylko po błędzie <video> albo zamknięciu WebSocketu — na obraz,
+  // który się zacina, ale połączenie żyje, nie reaguje. Wtedy strona sama
+  // tworzy odtwarzacz kafelka od nowa, tak jak klik w pełny ekran i z powrotem.
+  const WD_TICK_MS        = 2000;   // co ile sprawdzamy kafelki
+  const WD_GRACE_MS       = 15000;  // spokój po (ponownym) utworzeniu odtwarzacza:
+                                    // Eurolook (WebRTC, transkodowany) daje 1. klatkę po ~10 s
+  const WD_STALL_MS       = 6000;   // currentTime nie rośnie tak długo → restart
+  const WD_LAG_S          = 3;      // tylko MSE: tyle sekund bufora przed currentTime…
+  const WD_LAG_MS         = 10000;  // …nieprzerwanie tak długo → restart
+  const WD_DROP_WINDOW_MS = 10000;  // okno pomiaru gubionych klatek
+  const WD_DROP_RATIO     = 0.2;    // gubione / wszystkie klatki w oknie powyżej tego → restart
+  const WD_COOLDOWN_MS    = 30000;  // najwyżej jeden restart kafelka na tyle
+
   const grid = document.getElementById('grid');
   const msg  = document.getElementById('msg');
   let cams = [], base = '';
@@ -238,6 +252,7 @@
     el.mode = mode;
     el.src = new URL('api/ws?src=' + encodeURIComponent(name), base);
     tile.prepend(el);
+    tile._wd = { born: performance.now() };   // watchdog liczy od nowa, z okresem ochronnym
   }
 
   // Układ rejestratora: duże pole + do pięciu mniejszych, w kolejności z listy.
@@ -282,6 +297,7 @@
     tile.appendChild(label);
 
     setStream(tile, stream, cam.mode);
+    tile._current = stream;   // bez tego pierwszy fullscreenchange odbudowuje wszystkie kafelki
 
     // Klik = pełny ekran tej kamery. Strumień podmienia się na główny
     // dopiero w reakcji na zdarzenie fullscreenchange, poniżej.
@@ -343,6 +359,98 @@
   wake();
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') wake();
+  });
+
+  // --- Watchdog odtwarzania (progi na górze skryptu) ---
+
+  // Nowy punkt odniesienia: po utworzeniu odtwarzacza, w okresie ochronnym
+  // i gdy odtwarzacz podmienił element <video>.
+  function wdRebase(wd, video, now) {
+    wd.video = video;
+    wd.time = video ? video.currentTime : 0;
+    wd.progressAt = now;
+    wd.lagSince = null;
+    wd.samples = [];
+  }
+
+  function wdRestart(tile, reason, value) {
+    const now = performance.now();
+    if (now - (tile._restartAt ?? -Infinity) < WD_COOLDOWN_MS) return;
+    tile._restartAt = now;
+    console.warn(`Kamery: watchdog odtwarza od nowa kafelek ${tile._cam.id} `
+      + `(${tile._current}) — ${reason}: ${value}.`);
+    setStream(tile, tile._current, tile._cam.mode);
+  }
+
+  function wdCheck(tile, now) {
+    const wd = tile._wd;
+    const video = tile.querySelector('video');
+    if (!video || now - wd.born < WD_GRACE_MS || video !== wd.video) {
+      wdRebase(wd, video, now);
+      return;
+    }
+
+    // a) obraz stoi: currentTime nie rośnie (każdy tryb)
+    const t = video.currentTime;
+    if (t > wd.time) wd.progressAt = now;
+    wd.time = t;
+    const stalled = now - wd.progressAt;
+    if (stalled >= WD_STALL_MS) {
+      return wdRestart(tile, 'stall', `currentTime stoi od ${(stalled / 1000).toFixed(1)} s`);
+    }
+
+    // b) poza WebRTC: odtwarzanie wlecze się za końcem bufora. WebRTC poznajemy
+    //    tylko po srcObject będącym MediaStream (wtedy bufora nie ma). Samo
+    //    srcObject nic nie mówi: przy ManagedMediaSource odtwarzacz podpina tam
+    //    MediaSource, bez niego — blob URL w src (video-rtc.js, onmse).
+    const b = video.buffered;
+    const webrtc = typeof MediaStream !== 'undefined' && video.srcObject instanceof MediaStream;
+    if (!webrtc && b.length) {
+      const lag = b.end(b.length - 1) - t;
+      if (lag <= WD_LAG_S) wd.lagSince = null;
+      else if (wd.lagSince === null) wd.lagSince = now;
+      else if (now - wd.lagSince >= WD_LAG_MS) {
+        return wdRestart(tile, 'lag', `${lag.toFixed(1)} s za końcem bufora od `
+          + `${((now - wd.lagSince) / 1000).toFixed(1)} s`);
+      }
+    } else {
+      wd.lagSince = null;
+    }
+
+    // c) dekoder gubi klatki: udział gubionych w ostatnim oknie
+    if (typeof video.getVideoPlaybackQuality === 'function') {
+      const q = video.getVideoPlaybackQuality();
+      const s = { at: now, dropped: q.droppedVideoFrames, total: q.totalVideoFrames };
+      wd.samples.push(s);
+      // zostaw najmłodszą próbkę starszą niż okno — od niej liczymy przyrost
+      while (wd.samples.length > 1 && now - wd.samples[1].at >= WD_DROP_WINDOW_MS) {
+        wd.samples.shift();
+      }
+      const old = wd.samples[0];
+      const dTotal = s.total - old.total, dDropped = s.dropped - old.dropped;
+      if (dTotal < 0 || dDropped < 0) {
+        wd.samples = [s];                   // liczniki się wyzerowały
+      } else if (now - old.at >= WD_DROP_WINDOW_MS && dTotal > 0
+                 && dDropped / dTotal > WD_DROP_RATIO) {
+        return wdRestart(tile, 'dropped', `${dDropped}/${dTotal} klatek w `
+          + `${((now - old.at) / 1000).toFixed(0)} s`);
+      }
+    }
+  }
+
+  setInterval(() => {
+    // ukryta karta: odtwarzacz sam się rozłącza, nie ma czego pilnować
+    if (document.hidden) return;
+    const now = performance.now();
+    grid.querySelectorAll('.tile').forEach(tile => wdCheck(tile, now));
+  }, WD_TICK_MS);
+
+  // Po powrocie karty odtwarzacz łączy się od nowa — to jak nowe utworzenie,
+  // więc znów okres ochronny.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    const now = performance.now();
+    grid.querySelectorAll('.tile').forEach(tile => { tile._wd.born = now; });
   });
 })();
 </script>
