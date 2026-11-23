@@ -40,3 +40,31 @@ Example: `https://kamery.<domain>/?uklad=nvr6&glowna=cam2&glowna_strumien=sub`
 
 The page only offers the layouts; which one a screen uses is decided by
 whoever builds the URL that screen opens.
+
+## Playback watchdog
+
+go2rtc's player reconnects only when the `<video>` element errors or the
+WebSocket closes; it does not notice a picture that stalls or stutters while
+the connection stays up (ADR-0013). The page therefore checks every tile —
+including the one in fullscreen — every 2 s and rebuilds its player, exactly
+as a click into fullscreen and back would, when one of these holds:
+
+| Reason in the console | Condition | Threshold |
+|---|---|---|
+| `stall` | `currentTime` of the tile's `<video>` does not increase (any mode) | ≥ 6 s |
+| `lag` | MSE only: `buffered.end(last) - currentTime` stays above 3 s | > 3 s for ≥ 10 s without a break |
+| `dropped` | dropped / total frames from `getVideoPlaybackQuality()`, increase over a window (total increase > 0) | > 0.2 over 10 s |
+
+- **Grace period:** nothing is measured for 15 s after a player is created or
+  rebuilt (the Eurolook over WebRTC shows its first frame after ~10 s), and
+  again after the page becomes visible, because the player reconnects then.
+- **Rate limit:** at most one restart per tile per 30 s.
+- **Hidden page:** no checks; the player disconnects by itself.
+- A restart keeps the tile's current stream (the main stream in fullscreen),
+  layout and click behaviour. It logs
+  `Kamery: watchdog odtwarza od nowa kafelek <id> (<stream>) — <reason>: <value>.`
+- The thresholds are the `WD_*` constants at the top of the page script.
+
+The watchdog does not fix a link that permanently cannot carry the stream:
+then the tile is rebuilt every 30 s and degrades again. Use a better link or
+`glowna_strumien=sub` instead.
