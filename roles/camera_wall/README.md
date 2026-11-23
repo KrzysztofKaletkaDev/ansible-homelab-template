@@ -52,7 +52,7 @@ as a click into fullscreen and back would, when one of these holds:
 | Reason in the console | Condition | Threshold |
 |---|---|---|
 | `stall` | `currentTime` of the tile's `<video>` does not increase (any mode) | ≥ 6 s |
-| `lag` | MSE only: `buffered.end(last) - currentTime` stays above 3 s | > 3 s for ≥ 10 s without a break |
+| `lag` | Not WebRTC (`video.srcObject` is not a `MediaStream`): `buffered.end(last) - currentTime` stays above 3 s | > 3 s for ≥ 10 s without a break |
 | `dropped` | dropped / total frames from `getVideoPlaybackQuality()`, increase over a window (total increase > 0) | > 0.2 over 10 s |
 
 - **Grace period:** nothing is measured for 15 s after a player is created or

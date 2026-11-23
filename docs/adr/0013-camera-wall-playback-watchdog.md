@@ -50,8 +50,8 @@ large share of decoded frames stays in that state indefinitely.
   tile's `<video>` (`tile.querySelector('video')`) and restarts the tile
   when one of these holds:
   1. **stall** — `currentTime` has not increased for **≥ 6 s** (any mode);
-  2. **lag** — MSE only: `buffered.end(last) - currentTime` **> 3 s**
-     without a break for **≥ 10 s**;
+  2. **lag** — any tile not playing WebRTC: `buffered.end(last) -
+     currentTime` **> 3 s** without a break for **≥ 10 s**;
   3. **dropped** — from `getVideoPlaybackQuality()`, the increase in dropped
      frames divided by the increase in total frames over a **10 s** window
      is **> 0.2**, with the total increase above zero.
@@ -80,8 +80,12 @@ Why these thresholds:
 - **3 s lag for 10 s** — with `playbackRate = gap` a healthy player 3 s
   behind plays at 3× and catches up within seconds. Staying above 3 s for
   10 s means it cannot keep up, and the player's own jump does not fire
-  below 5 s. The check is MSE-only: in WebRTC the player attaches a
-  `MediaStream` (`srcObject`) and there is no buffer to compare against.
+  below 5 s. The check is skipped for WebRTC, where there is no buffer to
+  compare against. A tile counts as WebRTC only when `video.srcObject` is a
+  `MediaStream`. An empty `srcObject` does not mean MSE: in `onmse`
+  (lines ~424–443) the player puts a blob URL in `src` when only
+  `MediaSource` exists, but assigns the `MediaSource` itself to `srcObject`
+  when `ManagedMediaSource` is available. The `lag` check covers both.
 - **20 % dropped over 10 s** — a healthy decoder drops close to nothing; a
   fifth of frames lost is visible stutter. The 10 s window keeps a single
   catch-up burst from counting.

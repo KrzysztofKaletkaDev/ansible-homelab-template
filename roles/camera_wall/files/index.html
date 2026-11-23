@@ -399,10 +399,13 @@
       return wdRestart(tile, 'stall', `currentTime stoi od ${(stalled / 1000).toFixed(1)} s`);
     }
 
-    // b) tylko MSE (w WebRTC odtwarzacz podpina srcObject i bufora nie ma):
-    //    odtwarzanie wlecze się za końcem bufora
+    // b) poza WebRTC: odtwarzanie wlecze się za końcem bufora. WebRTC poznajemy
+    //    tylko po srcObject będącym MediaStream (wtedy bufora nie ma). Samo
+    //    srcObject nic nie mówi: przy ManagedMediaSource odtwarzacz podpina tam
+    //    MediaSource, bez niego — blob URL w src (video-rtc.js, onmse).
     const b = video.buffered;
-    if (tile._cam.mode.includes('mse') && !video.srcObject && b.length) {
+    const webrtc = typeof MediaStream !== 'undefined' && video.srcObject instanceof MediaStream;
+    if (!webrtc && b.length) {
       const lag = b.end(b.length - 1) - t;
       if (lag <= WD_LAG_S) wd.lagSince = null;
       else if (wd.lagSince === null) wd.lagSince = now;
